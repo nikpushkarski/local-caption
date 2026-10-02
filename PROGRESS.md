@@ -6,8 +6,8 @@ Build a local replacement for the user's AutoSubtitleBackups script; eliminate
 and keep the architecture ready for a later macOS build. Leave backups untouched.
 
 ## Iterations
-1. Audit + repository checkpoint (current).
-2. Local subtitle core and regression tests.
+1. Audit + repository checkpoint (complete).
+2. Local subtitle core and regression tests (complete; 12 passing).
 3. Offline processing worker, GUI, and safe output handling.
 4. Packaging, integration tests, documentation, final checkpoint.
 
@@ -21,7 +21,10 @@ and keep the architecture ready for a later macOS build. Leave backups untouched
 - Separate GUI from a subprocess worker: cancellation can terminate inference.
 - Require a local model file; never download models at runtime.
 - Keep FFmpeg and models external; one-folder PyInstaller build with a Windows exe.
-- No host Python detected initially. Provision isolated tooling, not sandbox Python.
+- No host Python detected initially. Provisioned uv 0.11.6 and managed Python 3.12.13,
+  then project-local .venv. Installed pinned Qt/PyInstaller; no sandbox code executed.
+- Caption/layout functions adapted from the user's script; local SRT writer implemented
+  from scratch. Windows-only GDI replaced by Qt font metrics.
 - Backup archive and third-party auto_subtitle repository will not be executed.
 
 ## Resume
