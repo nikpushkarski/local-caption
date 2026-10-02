@@ -10,15 +10,16 @@ import sys
 import tempfile
 import time
 
-from PySide6.QtCore import QProcess, QSettings, QTimer, QUrl
+from PySide6.QtCore import QDir, QProcess, QSettings, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox,
     QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit,
-    QProgressBar, QPushButton, QVBoxLayout, QWidget,
+    QProgressBar, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
 from .engine import Job, MODES
+from .preview import ComparisonPreview
 
 
 class FileField(QWidget):
@@ -26,6 +27,7 @@ class FileField(QWidget):
         super().__init__()
         self.title, self.file_filter, self.save = title, file_filter, save
         self.edit = QLineEdit()
+        self.edit.editingFinished.connect(lambda: self.setText(self.text()))
         self.edit.setPlaceholderText("Drop a local file here, or browse…")
         button = QPushButton("Browse…")
         button.clicked.connect(self.browse)
@@ -37,10 +39,10 @@ class FileField(QWidget):
         self.edit.setAcceptDrops(False)
 
     def text(self):
-        return self.edit.text().strip().strip('"')
+        return QDir.toNativeSeparators(self.edit.text().strip().strip('"'))
 
     def setText(self, value):
-        self.edit.setText(value)
+        self.edit.setText(QDir.toNativeSeparators(str(value).strip().strip('"')))
 
     def browse(self):
         method = QFileDialog.getSaveFileName if self.save else QFileDialog.getOpenFileName
@@ -64,7 +66,7 @@ class Window(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Local Caption — offline subtitles")
-        self.resize(840, 730)
+        self.resize(1120, 940)
         self.setAcceptDrops(True)
         self.settings = QSettings("LocalCaption", "LocalCaption")
         self.process = None
@@ -78,12 +80,19 @@ class Window(QMainWindow):
 
         root = QWidget()
         layout = QVBoxLayout(root)
-        self.setCentralWidget(root)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(root)
+        self.setCentralWidget(scroll)
         heading = QLabel("Drop a video to begin. Processing stays on this machine.")
         heading.setStyleSheet("font-size: 17px; font-weight: bold; padding: 8px 0;")
         layout.addWidget(heading)
         self.inputs = QGroupBox("Job")
-        form = QFormLayout(self.inputs)
+        job_layout = QVBoxLayout(self.inputs)
+        self.preview = ComparisonPreview()
+        job_layout.addWidget(self.preview)
+        form = QFormLayout()
+        job_layout.addLayout(form)
         self.source = FileField("Input video")
         self.output = FileField("Save output", "Output (*.mp4 *.srt)", save=True)
         self.srt = FileField("Existing subtitles", "SubRip (*.srt)")
@@ -122,6 +131,7 @@ class Window(QMainWindow):
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
         self.log.setMaximumBlockCount(500)
+        self.log.setMaximumHeight(100)
         layout.addWidget(self.log, 1)
         buttons = QHBoxLayout()
         self.start_button = QPushButton("Start")
@@ -137,6 +147,26 @@ class Window(QMainWindow):
         self.source.edit.textChanged.connect(self.suggest_output)
         self.mode.currentIndexChanged.connect(self.mode_changed)
         self.mode_changed()
+        self.preview.inputDropped.connect(self.source.setText)
+        self.preview_timer = QTimer(self)
+        self.preview_timer.setSingleShot(True)
+        self.preview_timer.setInterval(350)
+        self.preview_timer.timeout.connect(self.refresh_previews)
+        self.source.edit.textChanged.connect(lambda: self.preview_timer.start())
+        self.output.edit.textChanged.connect(lambda: self.preview_timer.start())
+        self.mode.currentIndexChanged.connect(lambda: self.preview_timer.start())
+
+    def refresh_previews(self):
+        if self.process is not None:
+            return
+        source = self.source.text()
+        source_url = QUrl.fromLocalFile(str(Path(source).resolve())) if source and Path(source).is_file() else QUrl()
+        if source_url != self.preview.input.player.source():
+            self.preview.set_input(source)
+        output = self.output.text() if self.mode.currentData() != "transcribe" else ""
+        self.preview.set_output(output)
+        if self.mode.currentData() == "transcribe":
+            self.preview.output.message.setText("SRT-only job — no output video")
 
     def suggest_output(self):
         if self.source.text():
@@ -189,6 +219,8 @@ class Window(QMainWindow):
             return
         for key, field in [("model", self.model), ("ffmpeg", self.ffmpeg), ("ffprobe", self.ffprobe)]:
             self.settings.setValue(key, field.text())
+        self.preview_timer.stop()
+        self.preview.release_output()
         self.log.clear()
         self.pending = b""
         self.cancelled = self.done = False
@@ -266,6 +298,7 @@ class Window(QMainWindow):
         self.start_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.cleanup()
+        self.refresh_previews()
 
     def cleanup(self):
         if self.workspace:
@@ -305,12 +338,23 @@ class Window(QMainWindow):
             if self.process is not None:
                 event.ignore()
                 return
+        self.preview_timer.stop()
+        self.preview.close_media()
         self.cleanup()
         event.accept()
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Local Caption desktop app")
+    parser.add_argument("--input", help="Preselect a local input video (does not start processing)")
+    parser.add_argument("--output", help="Preselect the output path / comparison video")
+    args = parser.parse_args()
     app = QApplication(sys.argv)
     window = Window()
+    if args.input:
+        window.source.setText(str(Path(args.input).expanduser().resolve()))
+    if args.output:
+        window.output.setText(str(Path(args.output).expanduser().resolve()))
     window.show()
     return app.exec()

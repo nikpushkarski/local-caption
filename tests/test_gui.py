@@ -27,6 +27,14 @@ class GuiTests(unittest.TestCase):
     def tearDown(self):
         self.window.close()
 
+    @unittest.skipUnless(os.name == "nt", "Windows-native separator check")
+    def test_native_path_display(self):
+        self.window.model.setText('"C:/Models/Whisper/medium.pt"')
+        self.assertEqual(self.window.model.edit.text(), r"C:\Models\Whisper\medium.pt")
+        self.window.model.edit.setText("C:/Models/medium.pt")
+        self.window.model.edit.editingFinished.emit()
+        self.assertEqual(self.window.model.edit.text(), r"C:\Models\medium.pt")
+
     def test_mode_and_output(self):
         self.window.source.setText(str(Path("example.mp4").resolve()))
         self.assertTrue(self.window.output.text().endswith("example-captioned.mp4"))
@@ -74,6 +82,8 @@ class GuiTests(unittest.TestCase):
             self.assertTrue(Path(self.window.output.text()).is_file())
             self.assertIsNone(self.window.workspace)
             self.assertTrue(self.window.start_button.isEnabled())
+            self.window.preview.close_media()
+            self.app.processEvents()
 
     def test_real_drop_event(self):
         with tempfile.TemporaryDirectory() as d:

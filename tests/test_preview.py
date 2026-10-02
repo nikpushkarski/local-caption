@@ -1,0 +1,113 @@
+import os
+os.environ["QT_QPA_PLATFORM"] = "offscreen"
+
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import time
+import unittest
+
+from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
+from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtMultimedia import QMediaPlayer
+from PySide6.QtWidgets import QApplication
+
+from local_caption.preview import ComparisonPreview
+
+
+@unittest.skipUnless(shutil.which("ffmpeg"), "FFmpeg fixture generator required")
+class PreviewTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+        cls.temp = tempfile.TemporaryDirectory()
+        cls.source = Path(cls.temp.name) / "preview ü.mp4"
+        subprocess.run([shutil.which("ffmpeg"), "-v", "error", "-f", "lavfi", "-i", "testsrc2=s=320x180:r=25:d=8",
+                        "-c:v", "libx264", str(cls.source)], check=True)
+        cls.output = Path(cls.temp.name) / "output.mp4"
+        shutil.copyfile(cls.source, cls.output)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.temp.cleanup()
+
+    def setUp(self):
+        self.preview = ComparisonPreview()
+        self.preview.show()
+
+    def tearDown(self):
+        self.preview.close_media()
+        self.preview.close()
+        self.app.processEvents()
+
+    def wait_for(self, condition, seconds=8):
+        deadline = time.monotonic() + seconds
+        while not condition() and time.monotonic() < deadline:
+            self.app.processEvents()
+            time.sleep(.01)
+        self.assertTrue(condition())
+
+    def load_pair(self):
+        self.preview.set_input(str(self.source))
+        self.preview.set_output(str(self.output))
+        self.wait_for(lambda: all(p.player.duration() == 8000 and p.player.isSeekable() for p in self.preview.panes))
+
+    def test_poster_frames_without_autoplay(self):
+        self.load_pair()
+        self.wait_for(lambda: all(p.video.videoSink().videoFrame().isValid() for p in self.preview.panes))
+        self.assertFalse(self.preview.playing)
+        self.assertTrue(all(p.player.playbackState() != QMediaPlayer.PlaybackState.PlayingState for p in self.preview.panes))
+
+    def test_shared_transport_and_audio(self):
+        self.load_pair()
+        self.assertTrue(self.preview.output.audio.isMuted())
+        self.assertFalse(self.preview.input.audio.isMuted())
+        self.preview.audio_choice.setCurrentIndex(1)
+        self.assertTrue(self.preview.input.audio.isMuted())
+        self.assertFalse(self.preview.output.audio.isMuted())
+        self.preview.seek(2000)
+        self.assertTrue(all(p.player.position() == 2000 for p in self.preview.panes))
+        self.preview.toggle_play()
+        self.wait_for(lambda: all(p.player.position() > 2300 for p in self.preview.panes))
+        self.assertLess(abs(self.preview.input.player.position() - self.preview.output.player.position()), 250)
+        self.preview.pause()
+        self.assertTrue(all(p.player.playbackState() != QMediaPlayer.PlaybackState.PlayingState for p in self.preview.panes))
+        self.preview.forward_button.click()
+        self.assertGreaterEqual(self.preview.position, 7300)
+        self.preview.back_button.click()
+        self.assertLess(self.preview.position, 3000)
+        self.preview.slider.setValue(500)
+        self.assertEqual(self.preview.position, 4000)
+        self.preview.stop()
+        self.assertTrue(all(p.player.position() == 0 for p in self.preview.panes))
+
+    def test_drift_correction_and_release(self):
+        self.load_pair()
+        self.preview.input.player.setPosition(3000)
+        self.preview.output.player.setPosition(1000)
+        self.preview.synchronize()
+        self.assertEqual(self.preview.output.player.position(), 3000)
+        self.preview.release_output()
+        self.assertTrue(self.preview.output.player.source().isEmpty())
+        # Exercise Windows file-handle release, not just player state.
+        self.app.processEvents()
+        moved = self.output.with_suffix(".moved")
+        self.output.rename(moved)
+        moved.rename(self.output)
+
+    def test_drop_directly_on_input_video(self):
+        paths = []
+        self.preview.inputDropped.connect(paths.append)
+        data = QMimeData()
+        data.setUrls([QUrl.fromLocalFile(str(self.source))])
+        enter = QDragEnterEvent(QPoint(5, 5), Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        QApplication.sendEvent(self.preview.input.video, enter)
+        drop = QDropEvent(QPointF(5, 5), Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        QApplication.sendEvent(self.preview.input.video, drop)
+        self.assertEqual(paths, [str(self.source)])
+
+    def test_missing_or_srt_output_is_empty(self):
+        self.preview.set_output("missing.mp4")
+        self.assertTrue(self.preview.output.player.source().isEmpty())
+        self.assertFalse(self.preview.play_button.isEnabled())

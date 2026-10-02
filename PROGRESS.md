@@ -1,5 +1,20 @@
 # Work checkpoints
 
+## Iteration 5 — paired video previews (in progress)
+- User feedback: native Windows path separators; input drop-preview; adjacent output
+  preview; shared playback, stop, forward/back controls.
+- Tagged baseline `checkpoint-before-previews` before changes.
+- File fields now normalize native separators on browse/drop/settings/manual edit.
+- Added Qt Multimedia paired players in Job, with shared play/pause/stop, ±5-second
+  skips, seek slider, drift correction, and single-source audio selection.
+- Input video surface accepts drops. Existing output is loaded automatically and
+  refreshed after processing. Output player is released before atomic replacement.
+- Preview decoding occurs on selection (before Start); security docs must reflect it.
+- Tests cover native separators, direct video drops, actual dual decoding, posters,
+  shared transport, drift correction, audio selection and Windows file-handle release.
+- Source tests passing; packaging and final native visual checks next.
+
+
 ## Contract
 Build a local replacement for the user's AutoSubtitleBackups script; eliminate
 `auto_subtitle`, add a drag/drop Windows desktop GUI and executable packaging,
