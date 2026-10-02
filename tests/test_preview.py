@@ -107,13 +107,15 @@ class PreviewTests(unittest.TestCase):
         QApplication.sendEvent(self.preview.input.video, drop)
         self.assertEqual(paths, [str(self.source)])
 
-    def native_drop(self, pane, urls):
+    def native_drop(self, pane, urls, via_owner=False):
         self.app.processEvents()
         global_point = pane.video.mapToGlobal(pane.video.rect().center())
         owner = self.preview.windowHandle()
         native = next(w for w in self.app.allWindows()
                       if w.metaObject().className() == "QVideoWindow" and owner.isAncestorOf(w)
                       and w.geometry().contains(owner.mapFromGlobal(global_point)))
+        if via_owner:
+            native = owner
         point = native.mapFromGlobal(global_point)
         data = QMimeData()
         data.setUrls(urls)
@@ -131,6 +133,12 @@ class PreviewTests(unittest.TestCase):
         paths = []
         self.preview.inputDropped.connect(paths.append)
         self.assertEqual(self.native_drop(self.preview.input, [QUrl.fromLocalFile(str(self.source))]), [True] * 3)
+        self.assertEqual(paths, [str(self.source)])
+
+    def test_native_drop_via_top_level_window(self):
+        paths = []
+        self.preview.inputDropped.connect(paths.append)
+        self.assertEqual(self.native_drop(self.preview.input, [QUrl.fromLocalFile(str(self.source))], via_owner=True), [True] * 3)
         self.assertEqual(paths, [str(self.source)])
 
     def test_native_drop_while_video_playing(self):

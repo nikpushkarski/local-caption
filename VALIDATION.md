@@ -1,5 +1,19 @@
 # Validated Windows checkpoint
 
+## v0.2.1 — drops on the native video surface
+
+- Fixed native-window drag routing: the visible video surface is not the outer
+  QVideoWidget used by the original drop test. Both native render-window and
+  owning-window drag events are now handled within the preview bounds.
+- New regression fails with the fix disabled. Tests cover native drag enter/move/drop,
+  playback, disabled controls, output-pane rejection and remote-URL rejection.
+- Native event tests pass with the real Windows platform plugin as well as offscreen.
+- A real Windows OLE drag from a temporary local-file source onto the video surface
+  completed with CopyAction and emitted the expected path. This was a source-build
+  native test, not an automated Explorer test against the frozen app.
+- Final full suite: 36/36 passing, no skips. Versioned executable rebuilt at
+  `dist/v0.2.1/LocalCaption/LocalCaption.exe`; packaged burn/mux smoke tests pass.
+
 ## v0.2.0 — synchronized previews
 
 - 32/32 tests pass after packaging, no skips in the final run.
@@ -62,7 +76,7 @@ references and the optional numba TBB backend. The tested CPU inference path doe
 not require those modules; actual frozen word-timestamp inference passed. These
 warnings are not evidence that every optional upstream capability is supported.
 
-The current output is `dist/v0.2.0/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
+The current output is `dist/v0.2.1/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
 folder and documentation. Build artifacts and private development tooling are
 intentionally not tracked in Git.
 
