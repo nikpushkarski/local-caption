@@ -1,5 +1,20 @@
 # Validated Windows checkpoint
 
+## Release packaging and CPU edition
+
+- Git-tracked source remains under 1 MB. Local `dist/`, `.venv*`, `build/` and
+  `.tools/` are ignored build artifacts; CUDA PyTorch accounts for most disk usage.
+- The v0.4.1 CPU edition uses PyTorch 2.10.0+cpu: 0.65 GiB extracted, ~219 MiB
+  archived. The packaged GUI opened; the packaged worker passed a real local
+  `medium.pt` transcription, burn and mux. Hardware video encoding remains possible
+  when the user's external FFmpeg supports it; CUDA transcription is disabled.
+- The v0.4.1 CUDA edition is optional: 4.47 GiB extracted, ~2.4 GiB archived in
+  two parts. Both editions are published on GitHub with SHA-256 checksums. Older
+  Windows releases v0.1.0, v0.2.0 and v0.2.1 were also uploaded and smoke-tested.
+- v0.3.0/v0.4.0 are still running on the developer's machine. Their ignored build
+  directories were retained rather than terminating a user process; other inactive
+  duplicate artifacts and local release archives were cleaned after upload.
+
 ## v0.4.1 — compact two-column layout
 
 - Subtitles / Video and output share one row under the full-width previews.
@@ -11,7 +26,8 @@
   1120px and 1000px widths, including selected long GPU names.
 - Source and packaged native GUI layouts visually reviewed. Packaged sample
   playback, GUI/worker lifecycle, FFmpeg burn and mux smoke tests pass.
-- Current release: `dist/v0.4.1/LocalCaption/LocalCaption.exe`.
+- Current CPU release: `dist/v0.4.1-cpu/LocalCaption/LocalCaption.exe`;
+  optional CUDA release can be rebuilt as `dist/v0.4.1/LocalCaption/LocalCaption.exe`.
 
 ## v0.4.0 — live sample captions and four style controls
 
@@ -142,7 +158,8 @@ references and the optional numba TBB backend. The tested CPU inference path doe
 not require those modules; actual frozen word-timestamp inference passed. These
 warnings are not evidence that every optional upstream capability is supported.
 
-The current output is `dist/v0.4.1/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
+The CPU output is `dist/v0.4.1-cpu/LocalCaption/LocalCaption.exe`; an optional CUDA
+build uses `dist/v0.4.1/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
 folder and documentation. Build artifacts and private development tooling are
 intentionally not tracked in Git.
 

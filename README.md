@@ -6,7 +6,7 @@ Make short, offline subtitles for videos. No `auto_subtitle`, cloud API, telemet
 
 ## Get started on Windows
 
-1. Download the **latest Windows release** from [GitHub Releases](https://github.com/nikpushkarski/local-caption/releases). Extract **all** archive parts, if the release has more than one, following its release notes. Keep the extracted `LocalCaption` folder intact; run `LocalCaption.exe` inside it. This is a portable, unsigned app—not an installer.
+1. Download the **CPU edition** (~220 MB archive) from [GitHub Releases](https://github.com/nikpushkarski/local-caption/releases/latest). It works without an NVIDIA card and still supports hardware *video encoding* when FFmpeg does. For NVIDIA *transcription*, choose the larger **CUDA edition** (~2.4 GB download): get both numbered `.001` and `.002` parts and extract `.001` with [7-Zip](https://www.7-zip.org/). You only need **one** edition—do not combine their folders. Keep the extracted `LocalCaption` folder intact and run `LocalCaption.exe`. This is a portable, unsigned app—not an installer.
 2. Select or drop a video onto the input preview.
 3. Choose trusted local `ffmpeg.exe` and `ffprobe.exe` (from an FFmpeg build with libass and libx264). For transcription, also choose a local Whisper `.pt` model. **These files are not bundled.**
 4. Choose an action and output name, adjust subtitles if you like, then press **Start**. CPU is the default. Compatible GPUs appear as optional choices for transcription and video encoding.
@@ -23,22 +23,29 @@ The output pane shows an immediate *sample*, not a rendered file. Use its dropdo
 
 **Subtitles:** Choose an installed font (Arial by default), auto or manual font size, target characters per line (24 by default), and up to 1, 2 or 3 lines (1 by default). The sample updates immediately. Font and size affect *burned* captions; the video player controls the appearance of selectable tracks and standalone SRTs.
 
-**GPU:** The app tests devices before offering them. CUDA can speed up transcription; NVENC, Quick Sync or AMF can speed up video encoding. Caption drawing still uses the CPU. If nothing passes the probe, the GPU choice is disabled. The Windows build includes CUDA-capable PyTorch and can also run on CPU; it does **not** require an NVIDIA GPU.
+**GPU:** The app tests devices before offering them. The CPU edition cannot use CUDA for transcription, but both editions can use NVENC, Quick Sync or AMF for video encoding if your FFmpeg/driver supports it. The CUDA edition can also transcribe on a compatible NVIDIA card; it works on CPU too. Caption drawing remains on CPU. Unavailable choices are disabled.
 
 The app never overwrites your input or an existing SRT. Replacing an output video requires confirmation. It can run inside Sandboxie if you prefer; drag-and-drop across a sandbox boundary may be blocked, so use Browse there. Selecting a video previews it immediately, so continue sandboxing untrusted media. See [SECURITY.md](SECURITY.md) for the trust boundaries.
 
 ## Build from source
 
-Python 3.12 and [uv](https://docs.astral.sh/uv/) are recommended. On Windows, choose **one** runtime extra:
+Python 3.12 and [uv](https://docs.astral.sh/uv/) are recommended. Build either edition with its own environment:
 
 ```powershell
-uv sync --locked --extra cuda --extra build       # CUDA-capable + CPU
-# OR: uv sync --locked --extra transcribe --extra build  # smaller, CPU-only
-.venv\Scripts\python.exe -m local_caption
-.venv\Scripts\python.exe -m unittest discover -s tests -v
-powershell -NoProfile -File scripts\build-windows.ps1
+$env:UV_PROJECT_ENVIRONMENT = '.venv-cpu'
+uv sync --locked --extra transcribe --extra build
+powershell -NoProfile -File scripts\build-windows.ps1 -Variant cpu
+
+# Optional larger CUDA edition:
+Remove-Item Env:UV_PROJECT_ENVIRONMENT
+uv sync --locked --extra cuda --extra build
+powershell -NoProfile -File scripts\build-windows.ps1 -Variant cuda
 ```
 
-If PowerShell blocks the build script, use `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build-windows.ps1` (process-only override). Builds go in `dist\v<VERSION>\LocalCaption`. Build dependencies require internet; running the app does not. FFmpeg and models remain external. Before redistributing binaries, review bundled dependency licenses; see [SECURITY.md](SECURITY.md).
+Run tests with `.venv-cpu\Scripts\python.exe -m unittest discover -s tests -v` (or `.venv\Scripts\python.exe` for CUDA). The two extras must not be combined.
+
+If PowerShell blocks the build script, use `-ExecutionPolicy Bypass` on that PowerShell invocation only. Builds go in `dist\v<VERSION>-cpu\LocalCaption` or `dist\v<VERSION>\LocalCaption`. Build dependencies require internet; running the app does not. FFmpeg and models remain external. Before redistributing binaries, review bundled dependency licenses; see [SECURITY.md](SECURITY.md).
 
 macOS packaging is not implemented or tested yet. PyInstaller cannot produce a macOS app from Windows. See [VALIDATION.md](VALIDATION.md) for tested Windows scenarios and [PROGRESS.md](PROGRESS.md) for development checkpoints.
+
+**Disk space:** `dist/`, `build/`, `.tools/` and virtual environments are ignored, local artifacts—not Git history. CUDA builds include several GB of PyTorch libraries. Close running app versions before removing their build folders; you can regenerate either edition with the commands above.

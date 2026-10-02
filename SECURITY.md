@@ -11,8 +11,8 @@ boundary, not an OS security boundary. Continue using Sandboxie if desired.
   these are separate from the selected external FFmpeg processing tools.
 - OpenAI Whisper, PyTorch (CPU-only or CUDA build), NumPy, tiktoken, numba/llvmlite
   and their dependencies: local inference. Versions and wheel hashes are in uv.lock.
-  The v0.3.0 Windows build includes NVIDIA CUDA runtime libraries. Review their
-  additional redistribution terms before publishing the binary.
+  The optional CUDA edition bundles NVIDIA CUDA runtime libraries; the smaller
+  CPU edition does not. Review third-party redistribution terms before sharing.
 - External FFmpeg / FFprobe: native media parsing/encoding. Choose maintained,
   trusted binaries with libass/libx264. They are not bundled or auto-updated.
 - A local Whisper checkpoint: choose a trusted official model; verify its SHA-256

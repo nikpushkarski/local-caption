@@ -1,5 +1,23 @@
 # Work checkpoints
 
+## Iteration 10 — releases and disk usage
+- Replaced the long README with a concise quickstart; Windows available, macOS WIP.
+- Published tested Windows archives on GitHub for v0.1.0, v0.2.0, v0.2.1 and
+  v0.4.1 (latest). Earlier CUDA-only v0.3/v0.4 archives were prepared locally but
+  not published: their 2.4 GB downloads are redundant historical builds.
+- Git-tracked source is <1 MB; huge local size comes from ignored dist/ and .venv/.
+- v0.4.1 CUDA bundle: 4.47 GiB, of which _internal/torch is ~4.13 GiB. Its split
+  release archive is ~2.4 GiB; GitHub caps individual assets at 2 GiB.
+- Added a CPU-only v0.4.1 edition: 0.65 GiB extracted, ~219 MiB archived.
+  Built in separate .venv-cpu with PyTorch 2.10.0+cpu, verified packaged GUI,
+  model transcription, burn and mux. CPU edition retains hardware video encoding.
+  Published it as the recommended asset in the existing v0.4.1 release.
+- GitHub releases include SHA-256 checksums. Historical workers were tested with
+  their original protocol. README now explains the two editions and extraction.
+- Two older GUI processes in dist/v0.3.0 and dist/v0.4.0 remain running; do not
+  delete those directories or terminate the user's processes. Other build copies,
+  CUDA development env and temporary release archives are safe to regenerate.
+
 ## Iteration 9 — compact two-column layout (v0.4.1, complete)
 - Under the previews/transport: Subtitles on the left, Video and output fields on
   the right. Subtitle settings now form a compact 2×2 grid.
