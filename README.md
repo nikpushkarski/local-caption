@@ -29,15 +29,18 @@ The app never overwrites your input or an existing SRT. Replacing an output vide
 
 ## Build from source
 
-Python 3.12 and [uv](https://docs.astral.sh/uv/) are recommended. Build either edition with its own environment:
+Python 3.12 and [uv](https://docs.astral.sh/uv/) are recommended. **Run these commands from the project folder** (the one containing `pyproject.toml`):
 
 ```powershell
+Set-Location -LiteralPath 'C:\Users\Nik Pushkarski\git\local-caption'
+
+# Smaller CPU edition:
 $env:UV_PROJECT_ENVIRONMENT = '.venv-cpu'
 uv sync --locked --extra transcribe --extra build
 powershell -NoProfile -File scripts\build-windows.ps1 -Variant cpu
 
-# Optional larger CUDA edition:
-Remove-Item Env:UV_PROJECT_ENVIRONMENT
+# Or, for the larger CUDA edition, first clear the CPU environment override:
+Remove-Item Env:UV_PROJECT_ENVIRONMENT -ErrorAction SilentlyContinue
 uv sync --locked --extra cuda --extra build
 powershell -NoProfile -File scripts\build-windows.ps1 -Variant cuda
 ```
