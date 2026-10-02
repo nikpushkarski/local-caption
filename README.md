@@ -5,7 +5,7 @@ without **auto_subtitle** or **ffmpeg-python**. Models, media and subtitles stay
 
 ## Run the Windows app
 
-Double-click **`dist\v0.3.0\LocalCaption\LocalCaption.exe`**.
+Double-click **`dist\v0.4.0\LocalCaption\LocalCaption.exe`**.
 Keep the **entire `LocalCaption` folder** together: the worker exe and `_internal`
 folder are required. No Python installation is needed to run this build.
 This is a portable, unsigned **one-folder build**, not a single-file installer.
@@ -30,9 +30,16 @@ Do not run the app elevated merely to enable drag/drop.
 ### Side-by-side video comparison
 
 The **Job** section contains input and output video previews. Drop a video directly
-onto the input preview or use the Video field. The output pane follows the Output
-path and reloads the finished MP4 automatically. SRT-only jobs have no output video.
-Both previews show a poster frame without autoplay.
+onto the input preview or use the Video field. As soon as it decodes, the output
+pane shows the same video with **"subs example, lorem ipsum"** overlaid. This is a
+live **Sample captions** view, not a generated output file. It needs no model or
+FFmpeg render and follows the input exactly during playback/seek.
+
+The output-pane dropdown switches between **Sample captions** and **Rendered video**
+(the latter is disabled until the Output path exists). A completed video job switches
+to the real output automatically; changing subtitle settings returns to the sample.
+SRT-only jobs keep the illustrative sample but do not create an output video.
+Both views show a frame without autoplay.
 
 Use the single **Play/Pause**, **Stop**, **−5 s / +5 s**, and seek slider to control
 both videos. Select Input audio, Output audio, or Muted to avoid doubled sound.
@@ -49,6 +56,35 @@ The CPU/GPU processing selectors do not control preview hardware acceleration.
 File fields display native Windows backslashes, including saved model paths.
 The window scrolls on smaller screens. Optional launch arguments preselect files
 without starting a job: `LocalCaption.exe --input "C:\Media\in.mp4" --output "C:\Media\out.mp4"`.
+
+### Subtitle controls
+
+Between the playback controls and Video path are four settings:
+
+| Setting | Default | Behavior |
+|---|---|---|
+| Font | **Arial (default)** | Installed font family; bold/white/black-outline styling stays fixed |
+| Font size | **Auto — video-scaled (default)** | Original `min(height × 28/288, width × 0.075)` sizing; select or type 1–512 source-video pixels |
+| Target chars / line | **24 (default)** | Select or type 6–120 characters as an approximate line-width target |
+| Maximum lines | **1 (default)** | Allow up to 1, 2 or 3 lines; does not force that many lines |
+
+The sample updates immediately without changing the source. Font size is relative
+to the video, not the preview widget. Text is fitted down if necessary to stay
+inside the frame. Bottom placement and margins retain the original defaults.
+Qt paints the illustrative sample using the same font/layout calculations as the
+real burn; libass rasterization/line spacing can differ slightly.
+
+The fixed example is never shortened or truncated. With one line allowed, changing
+the character target affects real cue grouping but cannot shorten that fixed
+example. With multiple lines, the example wraps. Long words remain whole. Generated
+cues scale the original four-word budget with target width/line count, retaining
+original punctuation, pause and 1.5-second timing limits.
+
+Font/size apply to **burned** captions only. Generated SRTs preserve the requested
+line breaks, but their player may reflow them and chooses its own font/size. An
+existing edited SRT is never rewritten; burn settings affect only its render copy.
+"Add existing SRT as track" keeps that file's contents unchanged, so the style
+controls are illustrative only for that action.
 
 ### CPU / GPU processing
 
@@ -78,7 +114,7 @@ CPU remains the default, and transcription/encoding have separate dropdowns:
 - Intel/AMD GPU transcription, Apple MPS, and macOS VideoToolbox are not enabled in
   this version. Hardware support here means support by these tested app backends.
 
-The v0.3.0 build includes CUDA-capable PyTorch **and selectable CPU processing**, so its folder
+The current build includes CUDA-capable PyTorch **and selectable CPU processing**, so its folder
 is several GB. No CUDA toolkit install is needed to run it, but a compatible NVIDIA
 driver is required for CUDA. The current machine's RTX 4070 Laptop GPU passed CUDA
 and NVENC tests; its Intel UHD Graphics passed QSV. GPU quality settings are not
@@ -102,9 +138,10 @@ Selectable tracks may be hidden until enabled in your video player.
 ### Preserved behavior and deliberate changes
 
 - CPU Whisper by default, optional CUDA; beam size 10, word timestamps, English default.
-- Short cues: at most 4 words / 24 characters / 1.5 seconds, split on punctuation
-  and pauses over 0.35 seconds. A single long word remains intact.
-- White bold Arial-style captions, black outlines, per-cue font fitting, video
+- Default short cues: at most 4 words / 24 characters / 1.5 seconds, split on
+  punctuation and pauses over 0.35 seconds. Width/line-count settings adjust the
+  word/character budget. A single long word remains intact.
+- White bold captions (Arial by default), black outlines, per-cue font fitting,
   rotation-aware sizing. Qt replaces Windows-only GDI font measurement.
 - Very short cues are extended only in the render copy; edited SRTs stay untouched.
 - Silent videos can be captioned from an existing SRT; transcription requires audio.
@@ -200,6 +237,8 @@ exercised with a real model during this iteration.
 - `worker.py`, `process_tree.py`: one-job subprocess and process-tree lifetime.
 - `app.py`: PySide6 native desktop GUI with native-path fields and local-file drag/drop.
 - `preview.py`: paired Qt Multimedia players, shared transport and drift correction.
+- `subtitle_style.py`, `style_ui.py`: validated style settings and the four controls.
+- `sample_preview.py`: live input-frame sample canvas, without writing output files.
 - `packaging/`: PyInstaller entry point and Windows one-folder spec.
 
 Core paths use pathlib, process arguments never use a shell, font metrics use Qt,

@@ -19,6 +19,7 @@ def single_line_captions(segments, style=None):
     SRT players may still reflow text; explicit ASS line breaks control burns.
     """
     style = (style or SubtitleStyle()).validate()
+    word_budget = max(1, round(MAX_CAPTION_WORDS * style.chars_per_line / MAX_CAPTION_CHARS)) * style.max_lines
     captions = []
     for segment in segments:
         words = segment.get("words", [])
@@ -45,7 +46,7 @@ def single_line_captions(segments, style=None):
             if not word["word"].strip():
                 continue
             if chunk and (
-                len(text(chunk + [word]).split()) > MAX_CAPTION_WORDS * style.max_lines
+                len(text(chunk + [word]).split()) > word_budget
                 or len(text(chunk + [word])) > style.chars_per_line * style.max_lines
                 or float(word["end"]) - float(chunk[0]["start"]) > MAX_CAPTION_SECONDS
                 or float(word["start"]) - float(chunk[-1]["end"]) > CAPTION_PAUSE_SECONDS
@@ -98,6 +99,15 @@ def measure_caption(text, font_size, font_family="Arial"):
     return QFontMetricsF(font).horizontalAdvance(text)
 
 
+def measure_line_height(font_size, font_family="Arial"):
+    from PySide6.QtGui import QFont, QFontMetricsF
+
+    font = QFont(font_family)
+    font.setPixelSize(font_size)
+    font.setBold(True)
+    return QFontMetricsF(font).height()
+
+
 def fit_caption_font(text, layout):
     size = layout["font_size"]
     # Leave extra room for differences between GDI and libass font rendering.
@@ -110,9 +120,13 @@ def fit_caption_font(text, layout):
     measured = measured_width(size)
     if measured > layout["available_width"]:
         size = max(1, int(size * layout["available_width"] / measured))
-    # Leave room for ascenders/descenders and line spacing for multiline captions.
-    size = min(size, max(1, int(layout.get("available_height", 100000) / (len(lines) * 1.4))))
-    while measured_width(size) > layout["available_width"]:
+    # Fit actual font ascent/descent as well as width for up to three lines.
+    def measured_height(font_size):
+        return measure_line_height(font_size, family) * len(lines) * 1.15
+
+    height = layout.get("available_height", 100000)
+    size = min(size, max(1, int(size * height / measured_height(size))))
+    while measured_width(size) > layout["available_width"] or measured_height(size) > height:
         if size == 1:
             raise ValueError("A caption is too long to fit even at the smallest font size.")
         size -= 1

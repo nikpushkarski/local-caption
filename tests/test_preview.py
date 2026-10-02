@@ -179,6 +179,20 @@ class PreviewTests(unittest.TestCase):
         self.wait_for(lambda: self.preview.position > 300)
         self.assertFalse(self.preview.output.sample.image.isNull())
 
+    def test_drop_on_sample_does_not_replace_input(self):
+        self.preview.set_input(str(self.source))
+        paths = []
+        self.preview.inputDropped.connect(paths.append)
+        data = QMimeData()
+        data.setUrls([QUrl.fromLocalFile(str(self.output))])
+        target = self.preview.output.sample
+        enter = QDragEnterEvent(QPoint(5, 5), Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        drop = QDropEvent(QPointF(5, 5), Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        QApplication.sendEvent(target, enter)
+        QApplication.sendEvent(target, drop)
+        self.assertEqual(paths, [])
+        self.assertEqual(self.preview.input.player.source(), QUrl.fromLocalFile(str(self.source.resolve())))
+
     def test_style_edit_returns_rendered_view_to_sample(self):
         from local_caption.subtitle_style import SubtitleStyle
         self.load_pair()

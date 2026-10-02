@@ -1,6 +1,6 @@
 # Work checkpoints
 
-## Iteration 8 — sample output and subtitle styling (in progress)
+## Iteration 8 — sample output and subtitle styling (complete, v0.4.0)
 - Show the input video in the output pane with fixed sample text immediately,
   without running Whisper/FFmpeg or writing an output file. Reuse input video
   frames for a live, synchronized sample canvas; keep real-output playback.
@@ -11,6 +11,21 @@
   Preserve original timing/pause/punctuation rules and edited-SRT files.
 - Font/size only apply to burned subtitles; SRT/selectable tracks use player fonts.
 - Explicitly label sample vs rendered output; changing style returns to the sample.
+- Implemented: shared SubtitleStyle validation/layout, live sample canvas fed by
+  input frames, four controls, job serialization, multiline generated SRTs and ASS.
+- Source suite passing; original caption defaults preserved. Target width and line
+  count scale the original word budget while pause/duration/punctuation limits stay.
+- Native screenshots reviewed. Fixed Qt's stroke-over-fill ordering so sample text
+  is white over black outline, not filled black; added a pixel-color regression.
+- Verified a real rotation-tagged video yields a rotated sample frame (Qt toImage
+  handles display transforms). Native input drop handlers remain in place.
+- Versioned CUDA-capable v0.4.0 build completed. Final suite: 62/62 passing, no skips.
+  Packaged custom Georgia/38px/12-char/3-line CUDA+NVENC transcription and render
+  passed; generated SRT retained line breaks. Default CPU burn/mux smoke passed.
+- Frozen GUI sample playback inspected via window-only capture. Reviewed default
+  and multiline sample images; protected against unfit text in tiny video frames.
+- README/SECURITY/VALIDATION updated. Final distribution is
+  dist/v0.4.0/LocalCaption/LocalCaption.exe; old releases left untouched.
 
 ## Iteration 7 — CPU/GPU task selection (complete, v0.3.0)
 - Separate transcription and burn-video selectors: CUDA inference and hardware

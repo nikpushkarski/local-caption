@@ -50,6 +50,13 @@ class StyleTests(unittest.TestCase):
         self.assertIn("\n", result[0]["text"])
         self.assertEqual(" ".join(result[0]["text"].split()), item["text"])
 
+    def test_wider_lines_expand_word_budget_without_changing_default(self):
+        item = segment(["One", "two", "three", "four", "five", "six"])
+        self.assertEqual(len(single_line_captions([item])), 2)
+        wider = single_line_captions([item], SubtitleStyle(chars_per_line=48))
+        self.assertEqual(len(wider), 1)
+        self.assertEqual(wider[0]["text"], item["text"])
+
     def test_srt_can_preserve_intentional_line_breaks(self):
         stream = io.StringIO()
         write_srt([dict(start=0, end=1, text="First line\nSecond line")], stream, preserve_newlines=True)
@@ -75,6 +82,17 @@ class StyleGuiTests(unittest.TestCase):
             self.assertGreater(len(white), 40)
             self.assertTrue(all(y > 250 for x, y in white))
             self.assertEqual(canvas.image.pixelColor(320, 330), QColor("blue"))
+        finally:
+            canvas.close()
+
+    def test_tiny_video_sample_fails_gracefully(self):
+        canvas = SamplePreview()
+        canvas.image = QImage(2, 2, QImage.Format.Format_RGB32)
+        canvas.image.fill(QColor("blue"))
+        canvas.show()
+        try:
+            canvas.grab()
+            self.assertIn("Sample unavailable", canvas.toolTip())
         finally:
             canvas.close()
 

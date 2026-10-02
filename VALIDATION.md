@@ -1,5 +1,28 @@
 # Validated Windows checkpoint
 
+## v0.4.0 — live sample captions and four style controls
+
+- Final rebuilt app: 62/62 tests pass, no skips. Original caption defaults still
+  pass their regression tests; new tests cover settings validation/default markers,
+  custom size/width values, multiline wrapping/SRT output, real custom-font ASS
+  rendering, immediate sample creation, no fake-output file writes, view switching,
+  white foreground pixels, tiny-video handling and output-pane drop isolation.
+- Source and packaged native GUI sample playback visually inspected. The output
+  example shows exactly `subs example, lorem ipsum`, with white fill/black outline,
+  and updates for custom font, size and 1–3 lines. Controls sit between transport
+  and Video path. Native input drop handling remains covered by existing tests.
+- A real rotation-tagged video verified that the sample follows displayed portrait
+  dimensions. The sample reuses input frames, without a second decoder/render job.
+- Packaged CUDA medium-model transcription + NVENC rendering passed with Georgia,
+  38px, target 12 characters and up to 3 lines. The generated SRT contained actual
+  line breaks and original word times. Packaged default CPU burn/mux tests also pass.
+- Edited SRT bytes stay unchanged; custom font/multiline behavior is verified in
+  the generated ASS render copy. SRT/mov_text viewers control their own font/size.
+- Sample rendering is illustrative, not pixel-identical to libass. Explicit font
+  size is a source-pixel maximum, fitted down when needed. Target character width
+  is approximate; the fixed example is never truncated to satisfy it.
+- Current release: `dist/v0.4.0/LocalCaption/LocalCaption.exe`.
+
 ## v0.3.0 — task-specific CPU/GPU selection
 
 - 48/48 tests pass after packaging, no skips. New tests cover encoder/device
@@ -106,7 +129,7 @@ references and the optional numba TBB backend. The tested CPU inference path doe
 not require those modules; actual frozen word-timestamp inference passed. These
 warnings are not evidence that every optional upstream capability is supported.
 
-The current output is `dist/v0.3.0/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
+The current output is `dist/v0.4.0/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
 folder and documentation. Build artifacts and private development tooling are
 intentionally not tracked in Git.
 

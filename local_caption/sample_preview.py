@@ -63,7 +63,12 @@ class SamplePreview(QWidget):
         painter.drawImage(QRectF(0, 0, width, height), self.image)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
-        layout, lines, size = self.caption_geometry(width, height)
+        try:
+            layout, lines, size = self.caption_geometry(width, height)
+        except ValueError as error:
+            self.setToolTip("Sample unavailable for these dimensions: " + str(error))
+            return  # Keep showing the video even if tiny dimensions cannot fit text.
+        self.setToolTip("Illustrative sample; final font rasterization may differ slightly.")
         font = QFont(self.style.font)
         font.setPixelSize(size)
         font.setBold(True)

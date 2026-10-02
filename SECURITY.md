@@ -33,8 +33,10 @@ an OS-wide network ban. Use a firewall/sandbox for an actual network guarantee.
 UNC/network share paths are still filesystem paths and can access a network share.
 Malicious media can exploit native codecs; a protocol allowlist is not a sandbox.
 
-**Video previews decode selected input/existing output media immediately**, before
-Start, in the GUI process. Previewing untrusted media carries native codec risk;
+**Input previews decode selected media immediately**, before Start, in the GUI
+process. Existing output media is decoded when Rendered video is selected. The
+sample-caption view paints already decoded input frames; it writes no preview
+video, subtitle file or modifications to the input. Previewing untrusted media carries native codec risk;
 continue using an OS sandbox if required. The external worker's FFmpeg protocol
 allowlist does not configure or sandbox Qt's separate multimedia decoder.
 Whisper model loading and output generation still run only after Start.
