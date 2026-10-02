@@ -1,5 +1,27 @@
 # Validated Windows checkpoint
 
+## v0.2.0 — synchronized previews
+
+- 32/32 tests pass after packaging, no skips in the final run.
+- Native path normalization covers model/settings/browse/drop/manual field values.
+- Real Qt Multimedia tests cover two decoded poster frames without autoplay, paired
+  playback/pause/stop, forward/back seeking, slider seeking, drift correction,
+  single-source audio selection, direct drop onto the video surface, and release of
+  output file handles before replacement. GUI re-render with a loaded preview passes.
+- Native source GUI comparison visually inspected with both videos showing the same
+  moving test-pattern frame. Packaged GUI launched with two local media paths; its
+  shared Play button advanced the timeline and changed to Pause, then closed cleanly.
+- Packaged FFmpeg burn/mux smoke tests pass; source GUI also drives the new packaged
+  worker successfully. Real model inference results below are from v0.1.0; this
+  iteration changes GUI/packaging, not the inference engine.
+- Distribution now lives in `dist/v0.2.0/LocalCaption/`. Qt Multimedia decoder
+  dependencies are included by PyInstaller. External FFmpeg CLI tools remain external.
+- UI Automation did not expose Qt descendants in this environment; frozen-window
+  checks used a process-specific native mouse message and window-only capture instead.
+
+## v0.1.0 baseline
+
+
 ## Environment
 
 - Windows 11 x64, managed Python 3.12.13, PySide6 6.10.2.
@@ -40,7 +62,7 @@ references and the optional numba TBB backend. The tested CPU inference path doe
 not require those modules; actual frozen word-timestamp inference passed. These
 warnings are not evidence that every optional upstream capability is supported.
 
-The output is `dist/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
+The current output is `dist/v0.2.0/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
 folder and documentation. Build artifacts and private development tooling are
 intentionally not tracked in Git.
 

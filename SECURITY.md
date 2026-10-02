@@ -6,7 +6,9 @@ boundary, not an OS security boundary. Continue using Sandboxie if desired.
 
 ## Runtime dependencies
 
-- PySide6 / Qt: native UI, drag/drop, font measurement.
+- PySide6 / Qt: native UI, drag/drop, font measurement and video preview decoding.
+  Qt Multimedia brings its own native media backend/libraries into the app bundle;
+  these are separate from the selected external FFmpeg processing tools.
 - OpenAI Whisper, PyTorch CPU, NumPy, tiktoken, numba/llvmlite and their dependencies:
   local inference. Versions and downloaded wheel hashes are in uv.lock.
 - External FFmpeg / FFprobe: native media parsing/encoding. Choose maintained,
@@ -29,7 +31,12 @@ an OS-wide network ban. Use a firewall/sandbox for an actual network guarantee.
 UNC/network share paths are still filesystem paths and can access a network share.
 Malicious media can exploit native codecs; a protocol allowlist is not a sandbox.
 
-Media is decoded only after Start. Model/tool paths are saved in QSettings
+**Video previews decode selected input/existing output media immediately**, before
+Start, in the GUI process. Previewing untrusted media carries native codec risk;
+continue using an OS sandbox if required. The external worker's FFmpeg protocol
+allowlist does not configure or sandbox Qt's separate multimedia decoder.
+Whisper and output generation still run only after Start.
+Model/tool paths are saved in QSettings
 (Windows registry: HKCU/Software/LocalCaption/LocalCaption). No automatic registry
 startup entries, service, file association, shell integration or administrator
 privileges are installed. Packaging produces unsigned executables.

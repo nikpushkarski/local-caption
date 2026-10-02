@@ -1,6 +1,6 @@
 # Work checkpoints
 
-## Iteration 5 — paired video previews (in progress)
+## Iteration 5 — paired video previews (complete, v0.2.0)
 - User feedback: native Windows path separators; input drop-preview; adjacent output
   preview; shared playback, stop, forward/back controls.
 - Tagged baseline `checkpoint-before-previews` before changes.
@@ -9,10 +9,21 @@
   skips, seek slider, drift correction, and single-source audio selection.
 - Input video surface accepts drops. Existing output is loaded automatically and
   refreshed after processing. Output player is released before atomic replacement.
-- Preview decoding occurs on selection (before Start); security docs must reflect it.
+- Preview decoding occurs on selection (before Start); README/SECURITY updated.
 - Tests cover native separators, direct video drops, actual dual decoding, posters,
   shared transport, drift correction, audio selection and Windows file-handle release.
-- Source tests passing; packaging and final native visual checks next.
+- Final suite: 32/32 tests passing. Versioned Windows build, frozen GUI playback
+  check, packaged burn/mux smoke tests and native visual inspection completed.
+- An in-place build was blocked by the user's still-running v0.1.0 app after
+  PyInstaller began clearing the old distribution. No running user process was
+  terminated. Legacy `dist/LocalCaption` may be incomplete; use the fully rebuilt
+  `dist/v0.2.0/LocalCaption/LocalCaption.exe` to relaunch. Build script now uses
+  versioned output and checks for running copies before modifying that release.
+- One pre-build test run hit a transient Windows access-denied error replacing a
+  tiny test file. Repeated full runs passed without modifying publication semantics.
+- UI Automation could not enumerate Qt controls here; dropped that attempted smoke
+  script. Checked the frozen Play control using native messages to the test process.
+- Native GUI screenshot evidence is ignored under .tools; no screenshots in Git.
 
 
 ## Contract

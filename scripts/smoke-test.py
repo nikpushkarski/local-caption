@@ -13,9 +13,10 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from local_caption.engine import Job
+from local_caption import __version__
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--worker", type=Path, default=Path("dist/LocalCaption/LocalCaptionWorker.exe"))
+parser.add_argument("--worker", type=Path, default=Path(f"dist/v{__version__}/LocalCaption/LocalCaptionWorker.exe"))
 parser.add_argument("--model", type=Path)
 parser.add_argument("--speech", type=Path)
 args = parser.parse_args()

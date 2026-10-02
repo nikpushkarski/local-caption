@@ -5,7 +5,7 @@ without **auto_subtitle** or **ffmpeg-python**. Models, media and subtitles stay
 
 ## Run the Windows app
 
-Double-click **`dist\LocalCaption\LocalCaption.exe`**.
+Double-click **`dist\v0.2.0\LocalCaption\LocalCaption.exe`**.
 Keep the **entire `LocalCaption` folder** together: the worker exe and `_internal`
 folder are required. No Python installation is needed to run this build.
 This is a portable, unsigned **one-folder build**, not a single-file installer.
@@ -25,6 +25,28 @@ backup. To remain sandboxed, launch the app through Sandboxie's **Run Sandboxed*
 command and choose paths visible inside that sandbox. Drag/drop across integrity
 levels or a sandbox boundary may be blocked by Windows; Browse remains available.
 Do not run the app elevated merely to enable drag/drop.
+
+### Side-by-side video comparison
+
+The **Job** section contains input and output video previews. Drop a video directly
+onto the input preview or use the Video field. The output pane follows the Output
+path and reloads the finished MP4 automatically. SRT-only jobs have no output video.
+Both previews show a poster frame without autoplay.
+
+Use the single **Play/Pause**, **Stop**, **−5 s / +5 s**, and seek slider to control
+both videos. Select Input audio, Output audio, or Muted to avoid doubled sound.
+The input timeline is the reference; periodic drift correction keeps the output
+close. This is synchronized comparison, **not guaranteed frame-accurate editing**.
+Durations can differ; a shorter output holds at its end. Preview controls are
+unavailable during processing, and the output decoder releases its file so the
+worker can safely replace it. Existing embedded subtitles are enabled when supported
+by the Qt backend; external edited SRTs appear only after rendering/muxing.
+
+Preview playback uses Qt Multimedia's bundled decoder (separate from your external
+FFmpeg tools); a preview codec error does not prevent trying a processing job.
+File fields display native Windows backslashes, including saved model paths.
+The window scrolls on smaller screens. Optional launch arguments preselect files
+without starting a job: `LocalCaption.exe --input "C:\Media\in.mp4" --output "C:\Media\out.mp4"`.
 
 ### Actions
 
@@ -92,14 +114,20 @@ If PowerShell blocks this locally reviewed script, use a **process-only** overri
 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build-windows.ps1`.
 This does not change the machine/user execution policy.
 
+Builds go into `dist\v<VERSION>\LocalCaption` so a running older version need not
+be replaced. Close this version's app/worker before rebuilding it; the script checks
+for running copies before modifying its build output.
+
 Build on Windows x64. Launch the GUI exe, not `LocalCaptionWorker.exe`. The separate
 console worker provides reliable JSON progress pipes in a windowed PyInstaller
-build. FFmpeg and model files are **external**, intentionally not redistributed.
+build. FFmpeg/FFprobe **command-line executables** and model files are external,
+intentionally not redistributed. Qt's own native decoder libraries are bundled
+for previews and have separate license/security implications.
 Before sharing the app publicly, review third-party licenses and signing needs.
 
 ### Tests
 
-The 25-test standard-library unittest suite covers caption splitting, SRT formatting,
+The standard-library unittest suite covers caption splitting, SRT formatting,
 Unicode, no-clobber publication, source preservation, actual Qt drag/drop, worker
 cancellation, and FFmpeg rendering/muxing. Media tests skip if FFmpeg/FFprobe are
 not on PATH. No test downloads models.
@@ -124,7 +152,8 @@ exercised with a real model during this iteration.
 - `engine.py`: validated jobs, direct FFmpeg subprocesses, output publication.
 - `transcription.py`: isolated Whisper progress adapter.
 - `worker.py`, `process_tree.py`: one-job subprocess and process-tree lifetime.
-- `app.py`: PySide6 native desktop GUI with local-file drag/drop.
+- `app.py`: PySide6 native desktop GUI with native-path fields and local-file drag/drop.
+- `preview.py`: paired Qt Multimedia players, shared transport and drift correction.
 - `packaging/`: PyInstaller entry point and Windows one-folder spec.
 
 Core paths use pathlib, process arguments never use a shell, font metrics use Qt,

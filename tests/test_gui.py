@@ -11,9 +11,12 @@ import time
 from unittest.mock import patch
 from PySide6.QtCore import QMimeData, QPoint, QPointF, QSettings, Qt, QUrl
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from local_caption.app import Window
+from local_caption import __version__
+
+BUILD_DIR = Path(f"dist/v{__version__}/LocalCaption")
 
 
 class GuiTests(unittest.TestCase):
@@ -49,11 +52,15 @@ class GuiTests(unittest.TestCase):
     def test_gui_worker_lifecycle(self):
         self.run_gui_job(False)
 
-    @unittest.skipUnless(Path("dist/LocalCaption/LocalCaptionWorker.exe").is_file() and shutil.which("ffmpeg"), "Packaged worker required")
+    @unittest.skipUnless((BUILD_DIR / "LocalCaptionWorker.exe").is_file() and shutil.which("ffmpeg"), "Packaged worker required")
     def test_gui_packaged_worker_lifecycle(self):
         self.run_gui_job(True)
 
-    def run_gui_job(self, frozen):
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg required")
+    def test_replace_output_while_preview_loaded(self):
+        self.run_gui_job(False, rerender=True)
+
+    def run_gui_job(self, frozen, rerender=False):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             video, srt = root / "input.mp4", root / "input.srt"
@@ -66,7 +73,7 @@ class GuiTests(unittest.TestCase):
             self.window.ffmpeg.setText(shutil.which("ffmpeg"))
             self.window.ffprobe.setText(shutil.which("ffprobe"))
             if frozen:
-                with patch.object(sys, "frozen", True, create=True), patch.object(sys, "executable", str(Path("dist/LocalCaption/LocalCaption.exe").resolve())):
+                with patch.object(sys, "frozen", True, create=True), patch.object(sys, "executable", str((BUILD_DIR / "LocalCaption.exe").resolve())):
                     self.window.start()
             else:
                 self.window.start()
@@ -82,6 +89,21 @@ class GuiTests(unittest.TestCase):
             self.assertTrue(Path(self.window.output.text()).is_file())
             self.assertIsNone(self.window.workspace)
             self.assertTrue(self.window.start_button.isEnabled())
+            if rerender:
+                deadline = time.monotonic() + 5
+                while self.window.preview.output.player.duration() == 0 and time.monotonic() < deadline:
+                    self.app.processEvents()
+                    time.sleep(.01)
+                self.assertGreater(self.window.preview.output.player.duration(), 0)
+                self.window.overwrite.setChecked(True)
+                with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes):
+                    self.window.start()
+                deadline = time.monotonic() + 30
+                while self.window.process is not None and time.monotonic() < deadline:
+                    self.app.processEvents()
+                    time.sleep(.01)
+                self.assertIsNone(self.window.process)
+                self.assertEqual(self.window.status.text(), "Completed", self.window.log.toPlainText())
             self.window.preview.close_media()
             self.app.processEvents()
 
