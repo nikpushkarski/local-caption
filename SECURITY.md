@@ -9,8 +9,10 @@ boundary, not an OS security boundary. Continue using Sandboxie if desired.
 - PySide6 / Qt: native UI, drag/drop, font measurement and video preview decoding.
   Qt Multimedia brings its own native media backend/libraries into the app bundle;
   these are separate from the selected external FFmpeg processing tools.
-- OpenAI Whisper, PyTorch CPU, NumPy, tiktoken, numba/llvmlite and their dependencies:
-  local inference. Versions and downloaded wheel hashes are in uv.lock.
+- OpenAI Whisper, PyTorch (CPU-only or CUDA build), NumPy, tiktoken, numba/llvmlite
+  and their dependencies: local inference. Versions and wheel hashes are in uv.lock.
+  The v0.3.0 Windows build includes NVIDIA CUDA runtime libraries. Review their
+  additional redistribution terms before publishing the binary.
 - External FFmpeg / FFprobe: native media parsing/encoding. Choose maintained,
   trusted binaries with libass/libx264. They are not bundled or auto-updated.
 - A local Whisper checkpoint: choose a trusted official model; verify its SHA-256
@@ -35,7 +37,13 @@ Malicious media can exploit native codecs; a protocol allowlist is not a sandbox
 Start, in the GUI process. Previewing untrusted media carries native codec risk;
 continue using an OS sandbox if required. The external worker's FFmpeg protocol
 allowlist does not configure or sandbox Qt's separate multimedia decoder.
-Whisper and output generation still run only after Start.
+Whisper model loading and output generation still run only after Start.
+GPU detection runs automatically in an isolated process at startup and after
+FFmpeg path changes (or on Rescan). It queries Windows adapter names / NVIDIA
+inventory, loads PyTorch, executes small CUDA kernels, and invokes the selected
+FFmpeg for small synthetic hardware-encode tests. Thus selected tool binaries and
+GPU drivers are exercised before Start. Choose trusted executables. The app does
+not install drivers, download models, or change system GPU/driver settings.
 Model/tool paths are saved in QSettings
 (Windows registry: HKCU/Software/LocalCaption/LocalCaption). No automatic registry
 startup entries, service, file association, shell integration or administrator

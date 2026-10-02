@@ -116,8 +116,25 @@ def check_encoder(ffmpeg, encoder):
         return False, str(error)
 
 
-def probe_rendering(ffmpeg, nvidia):
-    candidates = [(f"nvenc:{card['id']}", f"GPU — {card['name']} (NVENC {card['id']})") for card in nvidia]
+def nvenc_inventory(ffmpeg):
+    """Get FFmpeg's own ordinals; nvidia-smi/torch can use different device ordering."""
+    if not ffmpeg or not Path(ffmpeg).is_absolute() or not Path(ffmpeg).is_file():
+        return []
+    try:
+        result = command([ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "info",
+                          "-f", "lavfi", "-i", "color=s=640x360:r=25:d=0.12",
+                          "-c:v", "h264_nvenc", "-gpu", "list", "-f", "null", "-"], timeout=15)
+        # Listing deliberately exits without encoding. Still test each listed card.
+        return [{"id": index, "name": name.strip()} for index, name in
+                re.findall(r"GPU #(\d+) - <\s*(.*?)\s*>", result.stderr)]
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+
+
+def probe_rendering(ffmpeg):
+    candidates = [
+        (f"nvenc:{card['id']}", f"GPU — {card['name']} (NVENC {card['id']})") for card in nvenc_inventory(ffmpeg)
+    ]
     if not candidates:
         candidates.append(("nvenc:auto", "GPU — NVIDIA NVENC (driver-selected adapter)"))
     candidates += [("qsv", "GPU — Intel Quick Sync (driver-selected adapter)"),
@@ -135,7 +152,7 @@ def probe_rendering(ffmpeg, nvidia):
 def scan(ffmpeg):
     adapters, nvidia, notes = adapter_inventory()
     transcription, inference_notes = probe_transcription()
-    rendering, rendering_notes = probe_rendering(ffmpeg, nvidia)
+    rendering, rendering_notes = probe_rendering(ffmpeg)
     return {"adapters": adapters, "transcription": transcription, "rendering": rendering,
             "notes": notes, "transcription_notes": inference_notes, "rendering_notes": rendering_notes}
 

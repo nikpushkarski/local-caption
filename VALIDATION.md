@@ -1,5 +1,35 @@
 # Validated Windows checkpoint
 
+## v0.3.0 — task-specific CPU/GPU selection
+
+- 48/48 tests pass after packaging, no skips. New tests cover encoder/device
+  allowlists, unavailable CUDA/runtime paths, live-test-only eligibility, FFmpeg
+  device-index parsing, probe timeouts, disabled GPU choices, independent task
+  selectors, tool-change invalidation, FP16 decoding, and output preservation on
+  failed GPU preflight.
+- Source and frozen probes identify RTX 4070 Laptop GPU and Intel UHD Graphics.
+  Real CUDA matrix/FFT kernels pass; actual NVENC and QSV encoding probes pass.
+  AMF is rejected (no AMD device/runtime on this machine).
+- Real **packaged** medium-model CUDA transcription + NVENC caption rendering passed.
+  Packaged Intel QSV rendering, subtitle muxing, and CPU medium-model transcription
+  + libx264 rendering also passed. The recognized synthetic speech matches the
+  baseline text. No model or driver was downloaded or modified.
+- No-usable-GPU path verified with the frozen probe: CUDA devices hidden in that
+  child environment and no FFmpeg selected; both GPU lists empty. Applying the
+  report to the real GUI disables the GPU options with `no compatible GPU found`
+  and keeps CPU selected. No system-wide environment changes were made.
+- Source GUI background scan completed while its UI heartbeat kept advancing;
+  device panel screenshot reviewed. Probe processes use the existing process-tree
+  isolation/cancellation mechanism.
+- Build uses official PyTorch **2.10.0+cu128**, bundling CUDA 12.8 runtime libraries.
+  The lockfile also supports the mutually exclusive CPU-only development extra.
+- `dist/v0.3.0/LocalCaption/LocalCaption.exe` is the current Windows release.
+
+Limitations: AMD AMF success and multiple-card systems are implemented but not
+hardware-tested here. Intel/AMD encoders use the default driver-selected adapter.
+Intel/AMD/MPS inference and macOS encoding backends are not enabled. A small probe
+cannot guarantee every model fits VRAM or every video meets an encoder's limits.
+
 ## v0.2.1 — drops on the native video surface
 
 - Fixed native-window drag routing: the visible video surface is not the outer
@@ -76,15 +106,16 @@ references and the optional numba TBB backend. The tested CPU inference path doe
 not require those modules; actual frozen word-timestamp inference passed. These
 warnings are not evidence that every optional upstream capability is supported.
 
-The current output is `dist/v0.2.1/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
+The current output is `dist/v0.3.0/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
 folder and documentation. Build artifacts and private development tooling are
 intentionally not tracked in Git.
 
 ## Not yet validated / out of scope
 
 - macOS/Linux builds, Apple Silicon, signing/notarization, installer/updater.
-- Russian speech/automatic-language inference, GPU acceleration, long-form memory
-  benchmarks and a broad codec/HDR/variable-frame-rate/device compatibility matrix.
+- Russian speech/automatic-language inference, long-form memory benchmarks,
+  AMD/multiple-GPU success cases, and a broad codec/HDR/variable-frame-rate/device
+  compatibility matrix.
 - The packaged app running *inside* Sandboxie or cross-boundary drag/drop.
 - Adversarial-media security audit or strict OS-level network isolation.
 - Distribution-license clearance. See SECURITY.md before redistribution.

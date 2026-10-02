@@ -1,6 +1,6 @@
 # Work checkpoints
 
-## Iteration 7 — CPU/GPU task selection (in progress)
+## Iteration 7 — CPU/GPU task selection (complete, v0.3.0)
 - Separate transcription and burn-video selectors: CUDA inference and hardware
   video encoding are different capabilities. CPU remains the default.
 - Scan in an isolated background process, inventory adapters, test CUDA kernels
@@ -19,7 +19,15 @@
 - Live probes: RTX CUDA + NVENC and Intel QSV pass; AMD AMF rejected (no AMD device).
   The first 128px probe was below NVENC's minimum frame size; changed to 640x360.
 - Real source-worker medium-model CUDA transcription + NVENC render passed; Intel
-  QSV rendering and mux also passed. Next: full tests, CUDA packaging and docs.
+  QSV rendering and mux also passed.
+- Final CUDA-capable build completed under dist/v0.3.0/LocalCaption. All 48 tests
+  pass, no skips. Frozen CUDA+NVENC medium inference/render, QSV rendering, CPU
+  medium inference/render and subtitle mux all passed. Frozen hardware probe
+  matches source; no-usable-GPU disabled-option path verified separately.
+- Used FFmpeg's own NVENC device listing instead of assuming nvidia-smi indices
+  match encoder ordinals. Device scan UI stayed responsive (heartbeat verified).
+- README, SECURITY and VALIDATION describe runtime size, backend limits, automatic
+  probing, memory caveats, and mutually exclusive CPU/CUDA build extras.
 
 ## Iteration 6 — native preview drop fix (v0.2.1, complete)
 - Reproduced the missed path: QVideoWidget embeds a native QVideoWindow whose

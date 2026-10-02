@@ -12,7 +12,7 @@ from unittest.mock import patch
 from PySide6.QtWidgets import QApplication
 
 from local_caption.engine import Job, process
-from local_caption.hardware import check_encoder, encoder_args, probe_rendering, probe_transcription, valid_inference_device
+from local_caption.hardware import check_encoder, encoder_args, nvenc_inventory, probe_rendering, probe_transcription, valid_inference_device
 from local_caption.hardware_ui import HardwarePanel
 
 
@@ -60,10 +60,19 @@ class HardwareTests(unittest.TestCase):
     def test_only_live_passing_encoders_are_enabled(self):
         def check(ffmpeg, encoder):
             return (encoder in {"qsv", "nvenc:1"}, "probe detail")
-        with patch("local_caption.hardware.check_encoder", side_effect=check):
-            choices, notes = probe_rendering("ffmpeg", [{"id": "0", "name": "GPU 0"}, {"id": "1", "name": "GPU 1"}])
+        cards = [{"id": "0", "name": "GPU 0"}, {"id": "1", "name": "GPU 1"}]
+        with patch("local_caption.hardware.check_encoder", side_effect=check), patch("local_caption.hardware.nvenc_inventory", return_value=cards):
+            choices, notes = probe_rendering("ffmpeg")
         self.assertEqual([c["id"] for c in choices], ["nvenc:1", "qsv"])
         self.assertEqual(len(notes), 2)
+
+    def test_nvenc_uses_ffmpeg_ordinals_not_inventory_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tool = Path(directory) / "ffmpeg.exe"
+            tool.touch()
+            listing = "[h264_nvenc] [ GPU #1 - < NVIDIA Second Card > has Compute SM 8.9 ]"
+            with patch("local_caption.hardware.command", return_value=SimpleNamespace(returncode=1, stderr=listing)):
+                self.assertEqual(nvenc_inventory(str(tool)), [{"id": "1", "name": "NVIDIA Second Card"}])
 
     def test_probe_executes_real_frames_and_handles_timeout(self):
         with tempfile.TemporaryDirectory() as directory:

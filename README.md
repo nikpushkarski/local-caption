@@ -5,7 +5,7 @@ without **auto_subtitle** or **ffmpeg-python**. Models, media and subtitles stay
 
 ## Run the Windows app
 
-Double-click **`dist\v0.2.1\LocalCaption\LocalCaption.exe`**.
+Double-click **`dist\v0.3.0\LocalCaption\LocalCaption.exe`**.
 Keep the **entire `LocalCaption` folder** together: the worker exe and `_internal`
 folder are required. No Python installation is needed to run this build.
 This is a portable, unsigned **one-folder build**, not a single-file installer.
@@ -18,7 +18,8 @@ Whisper/PyTorch make the folder relatively large.
    tools are suggested, not copied or downloaded.
 4. For transcription, choose a **local Whisper `.pt` model**. The original
    `medium.pt` works. Choose English, Russian or automatic detection.
-5. Click Start. Cancel stops the worker and its FFmpeg descendants.
+5. In **Processing devices**, keep CPU or select a tested GPU for each task.
+6. Click Start. Cancel stops the worker and its FFmpeg descendants.
 
 Tool/model selections persist in Windows user settings. Nothing is written to the
 backup. To remain sandboxed, launch the app through Sandboxie's **Run Sandboxed**
@@ -44,9 +45,44 @@ by the Qt backend; external edited SRTs appear only after rendering/muxing.
 
 Preview playback uses Qt Multimedia's bundled decoder (separate from your external
 FFmpeg tools); a preview codec error does not prevent trying a processing job.
+The CPU/GPU processing selectors do not control preview hardware acceleration.
 File fields display native Windows backslashes, including saved model paths.
 The window scrolls on smaller screens. Optional launch arguments preselect files
 without starting a job: `LocalCaption.exe --input "C:\Media\in.mp4" --output "C:\Media\out.mp4"`.
+
+### CPU / GPU processing
+
+The app scans devices in a background process at startup and when the selected
+FFmpeg changes. **Rescan GPUs** refreshes results after driver/hardware changes.
+CPU remains the default, and transcription/encoding have separate dropdowns:
+
+- **Transcription:** CPU or a specific NVIDIA CUDA GPU. The probe executes FP16
+  matrix and FFT kernels using this app's PyTorch runtime; a card name alone is not
+  proof of compatibility. CUDA decoding uses FP16; CPU decoding stays FP32.
+- **Video encoding:** CPU/libx264, NVIDIA NVENC, Intel Quick Sync (QSV), or AMD AMF.
+  Each GPU backend must successfully encode three synthetic frames using the
+  selected FFmpeg and production encoder settings before it is enabled.
+- If a task has no usable GPU, the **GPU — no compatible GPU found** option is
+  disabled. **Device details / diagnostics** explains why, including missing
+  drivers, CPU-only PyTorch builds, unsupported encoders or failed kernel tests.
+- NVIDIA encoder choices use FFmpeg's own device indices, independently of CUDA
+  inference indices. Intel/AMD encoders currently use the driver-selected adapter;
+  individual adapter selection within those vendors is not implemented.
+- GPU encoding accelerates compression, **not** the CPU subtitle layout/libass
+  filtering. Selectable subtitle tracks stream-copy video, so their encoding
+  selector is disabled. Existing-SRT actions disable the transcription selector.
+- Availability is checked again at execution. Failures do not silently switch to
+  CPU. An out-of-memory error suggests CPU, a smaller model or freeing GPU memory.
+  Scan-time free VRAM is shown in details; successful small probes do not guarantee
+  that a particular Whisper model, long recording or video dimensions will fit.
+- Intel/AMD GPU transcription, Apple MPS, and macOS VideoToolbox are not enabled in
+  this version. Hardware support here means support by these tested app backends.
+
+The v0.3.0 build includes CUDA-capable PyTorch **and selectable CPU processing**, so its folder
+is several GB. No CUDA toolkit install is needed to run it, but a compatible NVIDIA
+driver is required for CUDA. The current machine's RTX 4070 Laptop GPU passed CUDA
+and NVENC tests; its Intel UHD Graphics passed QSV. GPU quality settings are not
+numerically equivalent to x264 CRF 18, so output size/quality can differ.
 
 ### Actions
 
@@ -65,7 +101,7 @@ Selectable tracks may be hidden until enabled in your video player.
 
 ### Preserved behavior and deliberate changes
 
-- CPU Whisper, beam size 10, word timestamps, English default.
+- CPU Whisper by default, optional CUDA; beam size 10, word timestamps, English default.
 - Short cues: at most 4 words / 24 characters / 1.5 seconds, split on punctuation
   and pauses over 0.35 seconds. A single long word remains intact.
 - White bold Arial-style captions, black outlines, per-cue font fitting, video
@@ -96,8 +132,17 @@ uv sync --locked --extra transcribe --extra build
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-`uv.lock` records transitive dependencies; uv selects CPU-only PyTorch on Windows
-and Linux. Runtime downloads are not used. Setup/build dependency downloads **do**
+`uv.lock` records transitive dependencies. The `transcribe` extra selects CPU-only
+PyTorch on Windows/Linux. For the CUDA-capable Windows build (CPU also supported),
+use the mutually exclusive `cuda` extra **instead**:
+
+```powershell
+uv sync --locked --extra cuda --extra build
+```
+
+This selects official PyTorch CUDA 12.8 wheels and downloads several GB during
+setup. Do not combine `--extra transcribe` and `--extra cuda`. Runtime downloads
+are not used. Setup/build dependency downloads **do**
 require internet. For rendering-only development, omit `--extra transcribe`.
 The full packaging spec requires the transcription dependencies.
 
@@ -150,6 +195,7 @@ exercised with a real model during this iteration.
 - `srt.py`: original local SRT writer, no third-party imports.
 - `captions.py`: caption splitting/layout adapted from the user's backup.
 - `engine.py`: validated jobs, direct FFmpeg subprocesses, output publication.
+- `hardware.py`, `hardware_ui.py`: live capability probes and separate CPU/GPU task selectors.
 - `transcription.py`: isolated Whisper progress adapter.
 - `worker.py`, `process_tree.py`: one-job subprocess and process-tree lifetime.
 - `app.py`: PySide6 native desktop GUI with native-path fields and local-file drag/drop.

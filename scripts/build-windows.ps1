@@ -2,7 +2,7 @@ param([switch]$SkipTests)
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $python = Join-Path (Get-Location) '.venv\Scripts\python.exe'
-if (-not (Test-Path -LiteralPath $python)) { throw 'Create .venv with uv sync --locked --extra transcribe --extra build first.' }
+if (-not (Test-Path -LiteralPath $python)) { throw 'Create .venv with uv sync --locked --extra cuda --extra build (or use transcribe instead of cuda for a CPU-only runtime).' }
 $version = (& $python -c 'from local_caption import __version__; print(__version__)').Trim()
 $distRoot = Join-Path (Get-Location) "dist\v$version"
 $appDir = Join-Path $distRoot 'LocalCaption'
