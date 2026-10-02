@@ -48,6 +48,29 @@ class GuiTests(unittest.TestCase):
         self.assertTrue(self.window.srt.isEnabled())
         self.assertFalse(self.window.model.isEnabled())
 
+    @unittest.skipUnless(shutil.which("ffmpeg"), "FFmpeg fixture generator required")
+    def test_input_immediately_shows_sample_and_style_updates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "sample.mp4"
+            subprocess.run([shutil.which("ffmpeg"), "-v", "error", "-f", "lavfi", "-i", "color=s=320x180:d=1",
+                            "-c:v", "libx264", str(source)], check=True)
+            self.window.show()
+            self.window.source.setText(str(source))
+            deadline = time.monotonic() + 8
+            while self.window.preview.output.sample.image.isNull() and time.monotonic() < deadline:
+                self.app.processEvents()
+                time.sleep(.01)
+            self.assertFalse(self.window.preview.output.sample.image.isNull())
+            self.assertTrue(self.window.preview.showing_sample)
+            self.assertFalse(Path(self.window.output.text()).exists())
+            self.window.subtitle_controls.size.setEditText("42")
+            self.window.subtitle_controls.lines.setCurrentIndex(2)
+            self.assertEqual(self.window.preview.output.sample.style.font_size, 42)
+            self.assertEqual(self.window.preview.output.sample.style.max_lines, 3)
+            self.assertLess(self.window.subtitle_controls.y(), self.window.source.y())
+            self.window.preview_timer.stop()
+            self.window.preview.close_media()
+
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg required")
     def test_gui_worker_lifecycle(self):
         self.run_gui_job(False)
@@ -89,6 +112,7 @@ class GuiTests(unittest.TestCase):
             self.assertTrue(Path(self.window.output.text()).is_file())
             self.assertIsNone(self.window.workspace)
             self.assertTrue(self.window.start_button.isEnabled())
+            self.assertFalse(self.window.preview.showing_sample)
             if rerender:
                 deadline = time.monotonic() + 5
                 while self.window.preview.output.player.duration() == 0 and time.monotonic() < deadline:

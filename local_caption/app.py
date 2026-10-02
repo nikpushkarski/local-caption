@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 from .engine import Job, MODES
 from .preview import ComparisonPreview
 from .hardware_ui import HardwarePanel
+from .style_ui import SubtitleControls
 
 
 class FileField(QWidget):
@@ -92,6 +93,8 @@ class Window(QMainWindow):
         job_layout = QVBoxLayout(self.inputs)
         self.preview = ComparisonPreview()
         job_layout.addWidget(self.preview)
+        self.subtitle_controls = SubtitleControls()
+        job_layout.addWidget(self.subtitle_controls)
         form = QFormLayout()
         job_layout.addLayout(form)
         self.source = FileField("Input video")
@@ -153,15 +156,17 @@ class Window(QMainWindow):
         self.preview.inputDropped.connect(self.source.setText)
         self.preview_timer = QTimer(self)
         self.preview_timer.setSingleShot(True)
-        self.preview_timer.setInterval(350)
+        self.preview_timer.setInterval(0)  # Show the sample as soon as a selected video decodes.
         self.preview_timer.timeout.connect(self.refresh_previews)
         self.source.edit.textChanged.connect(lambda: self.preview_timer.start())
         self.output.edit.textChanged.connect(lambda: self.preview_timer.start())
         self.mode.currentIndexChanged.connect(lambda: self.preview_timer.start())
         self.ffmpeg.edit.textChanged.connect(lambda: self.hardware.set_ffmpeg(self.ffmpeg.text()))
         self.hardware.set_ffmpeg(self.ffmpeg.text())
+        self.subtitle_controls.changed.connect(lambda: self.preview.set_subtitle_style(self.subtitle_controls.value()))
+        self.preview.set_subtitle_style(self.subtitle_controls.value())
 
-    def refresh_previews(self):
+    def refresh_previews(self, show_rendered=False):
         if self.process is not None:
             return
         source = self.source.text()
@@ -169,9 +174,9 @@ class Window(QMainWindow):
         if source_url != self.preview.input.player.source():
             self.preview.set_input(source)
         output = self.output.text() if self.mode.currentData() != "transcribe" else ""
-        self.preview.set_output(output)
+        self.preview.set_output(output, show_rendered=show_rendered)
         if self.mode.currentData() == "transcribe":
-            self.preview.output.message.setText("SRT-only job — no output video")
+            self.preview.output.message.setText("Sample only — SRT-only jobs do not render a video")
 
     def suggest_output(self):
         if self.source.text():
@@ -186,6 +191,7 @@ class Window(QMainWindow):
         self.language.setEnabled(transcribing)
         self.overwrite.setEnabled(self.mode.currentData() != "transcribe")
         self.hardware.set_mode(self.mode.currentData())
+        self.subtitle_controls.set_mode(self.mode.currentData())
         self.suggest_output()
 
     def dragEnterEvent(self, event):
@@ -207,11 +213,16 @@ class Window(QMainWindow):
     def start(self):
         def absolute(field):
             return str(Path(field.text()).expanduser().resolve()) if field.text() else ""
+        try:
+            subtitle_style = asdict(self.subtitle_controls.value())
+        except ValueError as error:
+            QMessageBox.warning(self, "Invalid subtitle settings", str(error))
+            return
         job = Job(source=absolute(self.source), output=absolute(self.output), mode=self.mode.currentData(),
                   model=absolute(self.model), srt=absolute(self.srt), ffmpeg=absolute(self.ffmpeg),
                   ffprobe=absolute(self.ffprobe), language=self.language.currentText(), overwrite=self.overwrite.isChecked(),
                   transcription_device=self.hardware.transcription.currentData() or "cpu",
-                  video_encoder=self.hardware.rendering.currentData() or "cpu")
+                  video_encoder=self.hardware.rendering.currentData() or "cpu", subtitle_style=subtitle_style)
         try:
             job.validate()
             if job.overwrite and job.mode != "transcribe" and Path(job.output).exists():
@@ -308,7 +319,7 @@ class Window(QMainWindow):
         self.start_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.cleanup()
-        self.refresh_previews()
+        self.refresh_previews(show_rendered=success)
 
     def cleanup(self):
         if self.workspace:

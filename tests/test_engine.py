@@ -65,12 +65,14 @@ class MediaTests(unittest.TestCase):
     def tearDownClass(cls):
         cls.temp.cleanup()
 
-    def worker(self, mode):
+    def worker(self, mode, style=None):
         from dataclasses import asdict
-        directory = self.root / mode
+        name = mode + ("-custom" if style else "")
+        directory = self.root / name
         directory.mkdir(exist_ok=True)
-        output = self.root / f"{mode}.mp4"
-        job = Job(str(self.source), str(output), mode, srt=str(self.srt), ffmpeg=FFMPEG, ffprobe=FFPROBE)
+        output = self.root / f"{name}.mp4"
+        job = Job(str(self.source), str(output), mode, srt=str(self.srt), ffmpeg=FFMPEG, ffprobe=FFPROBE,
+                  subtitle_style=style or {})
         job_file = directory / "job.json"
         job_file.write_text(json.dumps(asdict(job)), encoding="utf-8")
         result = subprocess.run([sys.executable, "-m", "local_caption", "--worker", str(job_file)], capture_output=True, text=True, timeout=90)
@@ -87,6 +89,14 @@ class MediaTests(unittest.TestCase):
         def frame(path):
             return subprocess.check_output([FFMPEG, "-v", "error", "-i", str(path), "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"])
         self.assertNotEqual(frame(self.source), frame(output))
+        self.assertEqual(self.srt.read_bytes(), before)
+
+    def test_custom_font_and_multiline_render_copy(self):
+        before = self.srt.read_bytes()
+        self.worker("burn", {"font": "Courier New", "font_size": 18, "chars_per_line": 6, "max_lines": 3})
+        ass = (self.root / "burn-custom" / "captions.ass").read_text(encoding="utf-8")
+        self.assertIn("Courier New,18", ass)
+        self.assertIn(r"Hello\Nмир", ass)
         self.assertEqual(self.srt.read_bytes(), before)
 
     def test_mux_silent_video(self):

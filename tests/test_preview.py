@@ -153,11 +153,43 @@ class PreviewTests(unittest.TestCase):
         paths = []
         self.preview.inputDropped.connect(paths.append)
         local = [QUrl.fromLocalFile(str(self.source))]
+        self.preview.set_output(str(self.output))  # Native output surface is only visible in rendered mode.
         self.assertEqual(self.native_drop(self.preview.output, local), [False] * 3)
         self.assertEqual(self.native_drop(self.preview.input, [QUrl("https://example.com/video.mp4")]), [False] * 3)
         self.preview.setEnabled(False)
         self.assertEqual(self.native_drop(self.preview.input, local), [False] * 3)
         self.assertEqual(paths, [])
+
+    def test_live_sample_without_output_file(self):
+        from local_caption.subtitle_style import SAMPLE_TEXT, SubtitleStyle
+        self.preview.set_input(str(self.source))
+        self.wait_for(lambda: not self.preview.output.sample.image.isNull())
+        self.assertTrue(self.preview.showing_sample)
+        self.assertTrue(self.preview.output.player.source().isEmpty())
+        self.assertFalse(self.preview.output.view_choice.model().item(1).isEnabled())
+        layout, lines, size = self.preview.output.sample.caption_geometry(320, 180)
+        self.assertEqual(" ".join(lines), SAMPLE_TEXT)
+        self.preview.set_subtitle_style(SubtitleStyle(font="Courier New", font_size=18, chars_per_line=12, max_lines=3))
+        layout, lines, size = self.preview.output.sample.caption_geometry(320, 180)
+        self.assertEqual(layout["font_family"], "Courier New")
+        self.assertGreater(len(lines), 1)
+        self.assertLessEqual(len(lines), 3)
+        self.assertLessEqual(size, 18)
+        self.preview.toggle_play()
+        self.wait_for(lambda: self.preview.position > 300)
+        self.assertFalse(self.preview.output.sample.image.isNull())
+
+    def test_style_edit_returns_rendered_view_to_sample(self):
+        from local_caption.subtitle_style import SubtitleStyle
+        self.load_pair()
+        self.assertFalse(self.preview.showing_sample)
+        self.preview.set_subtitle_style(SubtitleStyle(max_lines=2))
+        self.assertTrue(self.preview.showing_sample)
+        self.assertTrue(self.preview.output.player.source().isEmpty())
+        self.assertTrue(self.preview.output.view_choice.model().item(1).isEnabled())
+        self.preview.output.view_choice.setCurrentIndex(1)
+        self.assertFalse(self.preview.showing_sample)
+        self.wait_for(lambda: self.preview.output.player.duration() > 0)
 
     def test_missing_or_srt_output_is_empty(self):
         self.preview.set_output("missing.mp4")

@@ -3,18 +3,22 @@
 import math
 import re
 
+from .subtitle_style import SubtitleStyle, wrap_caption
+
 MAX_CAPTION_WORDS = 4
 MAX_CAPTION_CHARS = 24
 MAX_CAPTION_SECONDS = 1.5
 CAPTION_PAUSE_SECONDS = 0.35
 MIN_RENDER_CAPTION_SECONDS = 0.2
 
-def single_line_captions(segments):
-    """Split Whisper word timestamps into short cues without inventing word times.
+def single_line_captions(segments, style=None):
+    """Split word timestamps into short cues; defaults retain legacy single lines.
 
     A single unusually long word is preserved, even if it exceeds the limits.
-    SRT players may still wrap text; WrapStyle=2 applies to burned-in captions.
+    Optional 2–3 line layouts expand the cue word/character budget, not word times.
+    SRT players may still reflow text; explicit ASS line breaks control burns.
     """
+    style = (style or SubtitleStyle()).validate()
     captions = []
     for segment in segments:
         words = segment.get("words", [])
@@ -31,7 +35,7 @@ def single_line_captions(segments):
                 if captions:
                     start = max(start, captions[-1]["end"])
                 end = max(start + 0.001, float(chunk[-1]["end"]))
-                captions.append({"start": start, "end": end, "text": text(chunk)})
+                captions.append({"start": start, "end": end, "text": "\n".join(wrap_caption(text(chunk), style))})
                 chunk.clear()
 
         for word in words:
@@ -41,8 +45,8 @@ def single_line_captions(segments):
             if not word["word"].strip():
                 continue
             if chunk and (
-                len(text(chunk + [word]).split()) > MAX_CAPTION_WORDS
-                or len(text(chunk + [word])) > MAX_CAPTION_CHARS
+                len(text(chunk + [word]).split()) > MAX_CAPTION_WORDS * style.max_lines
+                or len(text(chunk + [word])) > style.chars_per_line * style.max_lines
                 or float(word["end"]) - float(chunk[0]["start"]) > MAX_CAPTION_SECONDS
                 or float(word["start"]) - float(chunk[-1]["end"]) > CAPTION_PAUSE_SECONDS
             ):
@@ -68,23 +72,27 @@ def display_dimensions(stream):
     return width, height
 
 
-def caption_layout(width, height):
+def caption_layout(width, height, style=None):
+    style = (style or SubtitleStyle()).validate()
     # Pixel-based font sizing, with a width cap for portrait/square videos.
-    font_size = max(1, round(min(height * 28 / 288, width * 0.075)))
+    auto_size = max(1, round(min(height * 28 / 288, width * 0.075)))
+    font_size = style.font_size or auto_size
     margin = max(1, round(width * 0.06))
-    outline = max(1, round(font_size * 0.09))
+    # Oversized manual fonts will be fitted down: don't leave a giant outline.
+    outline = max(1, round(min(font_size, auto_size) * 0.09))
     return {
-        "font_size": font_size, "margin": margin, "outline": outline,
+        "font_size": font_size, "font_family": style.font, "margin": margin, "outline": outline,
+        "available_height": max(1, height - 2 * (round(height * 0.04) + outline)),
         "available_width": max(1, width - 2 * (margin + outline)),
         "bottom_margin": max(1, round(height * 0.04)),
     }
 
 
-def measure_caption(text, font_size):
+def measure_caption(text, font_size, font_family="Arial"):
     """Use the same cross-platform font family requested from libass."""
     from PySide6.QtGui import QFont, QFontMetricsF
 
-    font = QFont("Arial")
+    font = QFont(font_family)
     font.setPixelSize(font_size)
     font.setBold(True)
     return QFontMetricsF(font).horizontalAdvance(text)
@@ -93,10 +101,18 @@ def measure_caption(text, font_size):
 def fit_caption_font(text, layout):
     size = layout["font_size"]
     # Leave extra room for differences between GDI and libass font rendering.
-    measured = measure_caption(text, size) * 1.15
+    lines = text.splitlines() or [""]
+    family = layout.get("font_family", "Arial")
+
+    def measured_width(font_size):
+        return max(measure_caption(line, font_size, family) for line in lines) * 1.15
+
+    measured = measured_width(size)
     if measured > layout["available_width"]:
         size = max(1, int(size * layout["available_width"] / measured))
-    while measure_caption(text, size) * 1.15 > layout["available_width"]:
+    # Leave room for ascenders/descenders and line spacing for multiline captions.
+    size = min(size, max(1, int(layout.get("available_height", 100000) / (len(lines) * 1.4))))
+    while measured_width(size) > layout["available_width"]:
         if size == 1:
             raise ValueError("A caption is too long to fit even at the smallest font size.")
         size -= 1
@@ -138,11 +154,12 @@ def visible_ass_cues(ass_text):
     return "\n".join(lines) + "\n"
 
 
-def fit_ass_captions(ass_text, width, height):
+def fit_ass_captions(ass_text, width, height, subtitle_style=None):
     """Use real video coordinates and a separately fitted font size for each cue."""
-    layout = caption_layout(width, height)
+    subtitle_style = (subtitle_style or SubtitleStyle()).validate()
+    layout = caption_layout(width, height, subtitle_style)
     style_values = {
-        "Fontname": "Arial", "Fontsize": str(layout["font_size"]), "Bold": "-1",
+        "Fontname": subtitle_style.font, "Fontsize": str(layout["font_size"]), "Bold": "-1",
         "PrimaryColour": "&H00FFFFFF", "OutlineColour": "&H00000000",
         "BorderStyle": "1", "Outline": str(layout["outline"]), "Shadow": "1",
         "Alignment": "2", "MarginL": str(layout["margin"]),
@@ -174,17 +191,18 @@ def fit_ass_captions(ass_text, width, height):
                 raise ValueError("Cannot parse the converted ASS subtitle cue.")
             text = re.sub(r"\{[^}]*\}", "", parts[9])
             text = " ".join(text.replace(r"\N", " ").replace(r"\n", " ").replace(r"\h", " ").split())
+            text = "\n".join(wrap_caption(text, subtitle_style))
             size = fit_caption_font(text, layout)
             sizes.append(size)
             # Remove embedded SRT styling so it cannot override the fitted font.
             # Literal braces/backslashes must not become libass override commands.
             text = text.replace("\\", "＼").replace("{", "｛").replace("}", "｝")
-            parts[9] = r"{\fs" + str(size) + "}" + text
+            parts[9] = r"{\fs" + str(size) + "}" + text.replace("\n", r"\N")
             fitted.append(",".join(parts))
         else:
             fitted.append(line)
     style = (
-        f"Fontname=Arial,Fontsize={layout['font_size']},Bold=1,PrimaryColour=&H00FFFFFF,"
+        f"Fontname={subtitle_style.font},Fontsize={layout['font_size']},Bold=1,PrimaryColour=&H00FFFFFF,"
         f"OutlineColour=&H00000000,BorderStyle=1,Outline={layout['outline']},Shadow=1,"
         f"Alignment=2,MarginL={layout['margin']},MarginR={layout['margin']},"
         f"MarginV={layout['bottom_margin']},WrapStyle=2"

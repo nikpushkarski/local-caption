@@ -1,6 +1,6 @@
 """Headless processing; external tools are explicit and never invoked via a shell."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import os
 from pathlib import Path
@@ -10,6 +10,7 @@ from typing import Callable
 from .captions import display_dimensions, fit_ass_captions, single_line_captions
 from .srt import save_new_srt
 from .hardware import check_encoder, encoder_args, valid_inference_device
+from .subtitle_style import SubtitleStyle
 
 MODES = {
     "transcribe_burn": "Transcribe + burn captions into video",
@@ -33,8 +34,10 @@ class Job:
     overwrite: bool = False
     transcription_device: str = "cpu"
     video_encoder: str = "cpu"
+    subtitle_style: dict = field(default_factory=dict)
 
     def validate(self):
+        SubtitleStyle.from_dict(self.subtitle_style)
         if not valid_inference_device(self.transcription_device):
             raise ValueError("Unsupported transcription device selection.")
         encoder_args(self.video_encoder)  # Validate the allowlist before running any tool.
@@ -102,6 +105,7 @@ def publish(staged: Path, output: Path, overwrite: bool):
 
 def process(job: Job, directory: Path, emit: Callable):
     job.validate()
+    subtitle_style = SubtitleStyle.from_dict(job.subtitle_style)
     if job.mode in {"burn", "transcribe_burn"} and job.video_encoder != "cpu":
         emit("status", f"Checking selected GPU encoder ({job.video_encoder})…")
         compatible, detail = check_encoder(job.ffmpeg, job.video_encoder)
@@ -149,10 +153,10 @@ def process(job: Job, directory: Path, emit: Callable):
             result = transcribe(model, np.fromfile(audio, dtype=np.float32), job.language, emit, device=device)
         except torch.cuda.OutOfMemoryError as error:
             raise RuntimeError("Not enough GPU memory for this model/audio. Choose CPU, a smaller model, or free GPU memory and rescan.") from error
-        captions = single_line_captions(result["segments"])
+        captions = single_line_captions(result["segments"], subtitle_style)
         if not captions:
             raise ValueError("No speech captions were produced. No output was replaced.")
-        srt = save_new_srt(output.with_suffix(".srt"), captions)
+        srt = save_new_srt(output.with_suffix(".srt"), captions, preserve_newlines=subtitle_style.max_lines > 1)
         emit("saved", str(srt))
         del model, result
         if device != "cpu":
@@ -179,7 +183,7 @@ def process(job: Job, directory: Path, emit: Callable):
         run_tool([job.ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error",
                   "-protocol_whitelist", "file,pipe", "-i", "captions.srt", "-y", "captions.ass"], directory)
         ass = directory / "captions.ass"
-        fitted, _ = fit_ass_captions(ass.read_text(encoding="utf-8-sig"), *display_dimensions(video))
+        fitted, _ = fit_ass_captions(ass.read_text(encoding="utf-8-sig"), *display_dimensions(video), subtitle_style)
         if not any(line.startswith("Dialogue:") for line in fitted.splitlines()):
             raise ValueError("The SRT contains no renderable cues.")
         ass.write_text(fitted, encoding="utf-8")

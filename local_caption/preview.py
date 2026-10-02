@@ -6,7 +6,9 @@ from PySide6.QtCore import QEvent, Qt, QTimer, QUrl, Signal
 from PySide6.QtGui import QWindow
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLabel, QPushButton, QSlider, QStackedWidget, QVBoxLayout, QWidget
+
+from .sample_preview import SamplePreview
 
 
 class DropVideo(QVideoWidget):
@@ -63,14 +65,31 @@ class DropVideo(QVideoWidget):
 
 
 class VideoPane(QWidget):
-    def __init__(self, title, placeholder, allow_drop=False):
+    def __init__(self, title, placeholder, allow_drop=False, sample_preview=False):
         super().__init__()
         self.placeholder = placeholder
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(QLabel(title))
+        header_container = QWidget()
+        header_container.setFixedHeight(self.fontMetrics().height() + 14)
+        header = QHBoxLayout(header_container)
+        header.setContentsMargins(0, 0, 0, 0)
+        header.addWidget(QLabel(title))
+        self.view_choice = None
+        if sample_preview:
+            self.view_choice = QComboBox()
+            self.view_choice.addItems(["Sample captions", "Rendered video"])
+            self.view_choice.model().item(1).setEnabled(False)
+            header.addWidget(self.view_choice)
+        layout.addWidget(header_container)
         self.video = DropVideo(allow_drop)
-        layout.addWidget(self.video, 1)
+        self.stack = QStackedWidget()
+        self.stack.addWidget(self.video)
+        self.sample = SamplePreview() if sample_preview else None
+        if self.sample is not None:
+            self.stack.addWidget(self.sample)
+            self.stack.setCurrentWidget(self.sample)
+        layout.addWidget(self.stack, 1)
         self.message = QLabel(placeholder)
         self.message.setWordWrap(True)
         self.message.setMaximumHeight(42)
@@ -123,7 +142,8 @@ class ComparisonPreview(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         panes = QHBoxLayout()
         self.input = VideoPane("Input — drop a video here", "Choose or drop an input video", True)
-        self.output = VideoPane("Output", "Rendered video will appear here")
+        self.output = VideoPane("Output", "Rendered video will appear here", sample_preview=True)
+        self.output_path = ""
         self.input.video.fileDropped.connect(self.inputDropped)
         for pane in self.panes:
             panes.addWidget(pane, 1)
@@ -159,6 +179,8 @@ class ComparisonPreview(QWidget):
         self.sync_timer = QTimer(self)
         self.sync_timer.setInterval(250)
         self.sync_timer.timeout.connect(self.synchronize)
+        self.output.view_choice.currentIndexChanged.connect(self.change_output_view)
+        self.input.video.videoSink().videoFrameChanged.connect(self.sample_frame_changed)
         self.update_timeline()
 
     @property
@@ -178,25 +200,69 @@ class ComparisonPreview(QWidget):
     def position(self):
         return self.master.position()
 
+    @property
+    def showing_sample(self):
+        return self.output.view_choice.currentIndex() == 0
+
     def set_audio(self):
-        for index, pane in enumerate(self.panes):
-            pane.audio.setMuted(self.audio_choice.currentIndex() != index)
+        selected = self.audio_choice.currentIndex()
+        if self.showing_sample:
+            self.input.audio.setMuted(selected == 2)
+            self.output.audio.setMuted(True)
+        else:
+            for index, pane in enumerate(self.panes):
+                pane.audio.setMuted(selected != index)
+
+    def sample_frame_changed(self, frame):
+        if self.showing_sample:
+            self.output.sample.set_frame(frame)
+
+    def set_subtitle_style(self, style):
+        self.output.sample.set_style(style)
+        if not self.showing_sample:
+            self.output.view_choice.setCurrentIndex(0)
+        else:
+            self.sample_frame_changed(self.input.video.videoSink().videoFrame())
 
     def set_input(self, path):
         self.stop()
+        self.output.sample.clear()
         self.input.load(path)
+        self.output.view_choice.blockSignals(True)
+        self.output.view_choice.setCurrentIndex(0)
+        self.output.view_choice.blockSignals(False)
+        self.change_output_view()
         self.update_timeline()
 
-    def set_output(self, path):
+    def set_output(self, path, show_rendered=True):
+        self.output_path = str(path) if path and Path(path).is_file() and Path(path).suffix.lower() != ".srt" else ""
+        self.output.view_choice.model().item(1).setEnabled(bool(self.output_path))
+        target = 1 if self.output_path and (show_rendered or not self.showing_sample) else 0
+        self.output.view_choice.blockSignals(True)
+        self.output.view_choice.setCurrentIndex(target)
+        self.output.view_choice.blockSignals(False)
+        self.change_output_view()
+
+    def change_output_view(self):
         self.pause()
-        self.output.load(path)
-        self.seek(self.position)
+        if self.showing_sample:
+            self.output.player.stop()
+            self.output.player.setSource(QUrl())
+            self.output.stack.setCurrentWidget(self.output.sample)
+            self.output.message.setText("Sample only — not rendered or saved")
+            self.output.sample.set_frame(self.input.video.videoSink().videoFrame())
+        else:
+            self.output.stack.setCurrentWidget(self.output.video)
+            self.output.load(self.output_path)
+            self.seek(self.position)
+        self.set_audio()
         self.update_timeline()
 
     def release_output(self):
         # Release the destination before the worker attempts atomic replacement.
         self.stop()
         self.output.clear()
+        self.output.sample.clear()
         self.update_timeline()
 
     def toggle_play(self):
@@ -225,6 +291,8 @@ class ComparisonPreview(QWidget):
         for pane in self.panes:
             pane.player.stop()
             pane.player.setPosition(0)
+            if not pane.player.source().isEmpty():
+                pane.player.pause()  # Decode the opening frame without playing sound.
         self.update_timeline()
 
     def seek(self, milliseconds):
@@ -296,3 +364,4 @@ class ComparisonPreview(QWidget):
         self.stop()
         for pane in self.panes:
             pane.clear()
+        self.output.sample.clear()
