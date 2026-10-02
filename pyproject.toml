@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-caption"
-version = "0.2.0"
+version = "0.2.1"
 description = "Offline desktop captions without auto_subtitle"
 requires-python = ">=3.12,<3.14"
 dependencies = ["PySide6==6.10.2"]

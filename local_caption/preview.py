@@ -2,10 +2,11 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import QEvent, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QWindow
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QComboBox, QHBoxLayout, QLabel, QPushButton, QSlider, QVBoxLayout, QWidget
 
 
 class DropVideo(QVideoWidget):
@@ -17,23 +18,48 @@ class DropVideo(QVideoWidget):
         self.setAcceptDrops(True)
         self.setMinimumSize(220, 150)
         self.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+        # QVideoWidget embeds a native QWindow via QWindowContainer on Windows.
+        # Explorer drops land on that window, not on this QWidget. It is reparented
+        # outside our QObject subtree, so intercept its events at application level.
+        QApplication.instance().installEventFilter(self)
 
-    def dragEnterEvent(self, event):
+    def dropped_path(self, event):
         urls = event.mimeData().urls()
-        if self.allow_drop and len(urls) == 1 and urls[0].isLocalFile():
-            event.acceptProposedAction()
-        else:
-            event.accept()  # Do not bubble an output-pane drop into the input field.
-
-    def dropEvent(self, event):
-        urls = event.mimeData().urls()
-        if self.allow_drop and len(urls) == 1 and urls[0].isLocalFile():
+        if self.allow_drop and self.isEnabled() and len(urls) == 1 and urls[0].isLocalFile():
             path = Path(urls[0].toLocalFile())
             if path.is_file() and path.suffix.lower() not in {".srt", ".pt", ".exe"}:
-                self.fileDropped.emit(str(path))
-                event.acceptProposedAction()
+                return path
+        return None
+
+    def handle_drag(self, event):
+        path = self.dropped_path(event)
+        if path is None:
+            event.ignore()
         else:
-            event.accept()
+            event.acceptProposedAction()
+            if event.type() == QEvent.Type.Drop:
+                self.fileDropped.emit(str(path))
+
+    def eventFilter(self, watched, event):
+        if isinstance(watched, QWindow) and event.type() in {
+            QEvent.Type.DragEnter, QEvent.Type.DragMove, QEvent.Type.Drop,
+        } and self.isVisible():
+            owner = self.window().windowHandle()
+            if owner is not None and (watched is owner or owner.isAncestorOf(watched)):
+                point = self.mapFromGlobal(watched.mapToGlobal(event.position().toPoint()))
+                if self.rect().contains(point):
+                    self.handle_drag(event)
+                    return True  # Do not let native video/root handlers reject or reroute it.
+        return super().eventFilter(watched, event)
+
+    def dragEnterEvent(self, event):
+        self.handle_drag(event)
+
+    def dragMoveEvent(self, event):
+        self.handle_drag(event)
+
+    def dropEvent(self, event):
+        self.handle_drag(event)
 
 
 class VideoPane(QWidget):

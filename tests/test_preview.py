@@ -9,7 +9,7 @@ import time
 import unittest
 
 from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
-from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtWidgets import QApplication
 
@@ -106,6 +106,50 @@ class PreviewTests(unittest.TestCase):
         drop = QDropEvent(QPointF(5, 5), Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
         QApplication.sendEvent(self.preview.input.video, drop)
         self.assertEqual(paths, [str(self.source)])
+
+    def native_drop(self, pane, urls):
+        self.app.processEvents()
+        global_point = pane.video.mapToGlobal(pane.video.rect().center())
+        owner = self.preview.windowHandle()
+        native = next(w for w in self.app.allWindows()
+                      if w.metaObject().className() == "QVideoWindow" and owner.isAncestorOf(w)
+                      and w.geometry().contains(owner.mapFromGlobal(global_point)))
+        point = native.mapFromGlobal(global_point)
+        data = QMimeData()
+        data.setUrls(urls)
+        accepted = []
+        for event in (
+            QDragEnterEvent(point, Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier),
+            QDragMoveEvent(point, Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier),
+            QDropEvent(QPointF(point), Qt.DropAction.CopyAction, data, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier),
+        ):
+            QApplication.sendEvent(native, event)
+            accepted.append(event.isAccepted())
+        return accepted
+
+    def test_drop_on_actual_native_render_window(self):
+        paths = []
+        self.preview.inputDropped.connect(paths.append)
+        self.assertEqual(self.native_drop(self.preview.input, [QUrl.fromLocalFile(str(self.source))]), [True] * 3)
+        self.assertEqual(paths, [str(self.source)])
+
+    def test_native_drop_while_video_playing(self):
+        self.load_pair()
+        self.preview.toggle_play()
+        paths = []
+        self.preview.inputDropped.connect(paths.append)
+        self.assertEqual(self.native_drop(self.preview.input, [QUrl.fromLocalFile(str(self.output))]), [True] * 3)
+        self.assertEqual(paths, [str(self.output)])
+
+    def test_native_drop_rejected_for_output_disabled_and_urls(self):
+        paths = []
+        self.preview.inputDropped.connect(paths.append)
+        local = [QUrl.fromLocalFile(str(self.source))]
+        self.assertEqual(self.native_drop(self.preview.output, local), [False] * 3)
+        self.assertEqual(self.native_drop(self.preview.input, [QUrl("https://example.com/video.mp4")]), [False] * 3)
+        self.preview.setEnabled(False)
+        self.assertEqual(self.native_drop(self.preview.input, local), [False] * 3)
+        self.assertEqual(paths, [])
 
     def test_missing_or_srt_output_is_empty(self):
         self.preview.set_output("missing.mp4")

@@ -1,5 +1,16 @@
 # Work checkpoints
 
+## Iteration 6 — native preview drop fix (v0.2.1, validation in progress)
+- Reproduced the missed path: QVideoWidget embeds a native QVideoWindow whose
+  drag events never reach the outer QWidget's overrides. Previous synthetic
+  tests targeted the outer widget only, explaining the false confidence.
+- Route native-window drag enter/move/drop events within the preview bounds to
+  the same validated drop handler. Preserve disabled-state and output-pane guards.
+- Added actual render-window regression tests, including video playback. Confirmed
+  the new test fails with the fix disabled. All three native-event tests also pass
+  with the real Windows Qt platform plugin, not just the offscreen test platform.
+- Full suite and v0.2.1 versioned executable build next.
+
 ## Iteration 5 — paired video previews (complete, v0.2.0)
 - User feedback: native Windows path separators; input drop-preview; adjacent output
   preview; shared playback, stop, forward/back controls.
