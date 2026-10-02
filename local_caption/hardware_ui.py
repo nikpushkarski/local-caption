@@ -28,6 +28,9 @@ class HardwarePanel(QGroupBox):
         form = QFormLayout(self)
         self.transcription = QComboBox()
         self.rendering = QComboBox()
+        for combo in (self.transcription, self.rendering):
+            combo.setMinimumContentsLength(22)
+            combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         self.populate(self.transcription, [], "GPU — checking devices…")
         self.populate(self.rendering, [], "GPU — checking devices…")
         form.addRow("Transcription", self.transcription)

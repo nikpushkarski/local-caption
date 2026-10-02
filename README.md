@@ -5,7 +5,7 @@ without **auto_subtitle** or **ffmpeg-python**. Models, media and subtitles stay
 
 ## Run the Windows app
 
-Double-click **`dist\v0.4.0\LocalCaption\LocalCaption.exe`**.
+Double-click **`dist\v0.4.1\LocalCaption\LocalCaption.exe`**.
 Keep the **entire `LocalCaption` folder** together: the worker exe and `_internal`
 folder are required. No Python installation is needed to run this build.
 This is a portable, unsigned **one-folder build**, not a single-file installer.
@@ -59,7 +59,10 @@ without starting a job: `LocalCaption.exe --input "C:\Media\in.mp4" --output "C:
 
 ### Subtitle controls
 
-Between the playback controls and Video path are four settings:
+Below the playback controls, **Subtitles** sits in the left column and **Video
+and output** fields sit in the right column. The next row pairs **Local tools and
+model** with **Processing devices**. Subtitle controls use a compact 2×2 grid:
+
 
 | Setting | Default | Behavior |
 |---|---|---|

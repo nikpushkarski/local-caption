@@ -1,5 +1,18 @@
 # Work checkpoints
 
+## Iteration 9 — compact two-column layout (v0.4.1, validation in progress)
+- Under the previews/transport: Subtitles on the left, Video and output fields on
+  the right. Subtitle settings now form a compact 2×2 grid.
+- Next row: Local tools and model on the left, Processing devices on the right.
+- Shortened the overwrite checkbox label without changing confirmation/commit
+  behavior; full explanation remains in its tooltip. Trust guidance retained.
+- Limited combo size hints so long GPU/action labels do not widen the whole window.
+- Native screenshot reviewed: equal-width columns fit the existing 1120px window.
+  Native regression also checks a 1000px window with long GPU selections. The
+  Windows offscreen plugin has inaccurate glyph widths, so native pixel-fit
+  assertions run separately from structural layout checks.
+- Next: full tests, versioned build, final checkpoint.
+
 ## Iteration 8 — sample output and subtitle styling (complete, v0.4.0)
 - Show the input video in the output pane with fixed sample text immediately,
   without running Whisper/FFmpeg or writing an output file. Reuse input video

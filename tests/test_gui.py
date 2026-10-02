@@ -38,6 +38,26 @@ class GuiTests(unittest.TestCase):
         self.window.model.edit.editingFinished.emit()
         self.assertEqual(self.window.model.edit.text(), r"C:\Models\medium.pt")
 
+    def test_sections_have_two_columns(self):
+        self.window.show()
+        self.app.processEvents()
+        for left, right in ((self.window.subtitle_controls, self.window.job_fields),
+                            (self.window.tools, self.window.hardware)):
+            self.assertLess(left.geometry().right(), right.geometry().left())
+            self.assertEqual(left.y(), right.y())
+            total = left.geometry().width() + right.geometry().width()
+            self.assertGreater(left.geometry().width(), total * .35)
+            self.assertGreater(right.geometry().width(), total * .35)
+        # Pixel-fit assertions use a native subprocess in test_layout.py:
+        # Windows' offscreen plugin uses placeholder glyph widths, not real fonts.
+        # Subtitle controls use two rows instead of forcing four wide columns.
+        controls = self.window.subtitle_controls
+        self.assertLess(controls.font.y(), controls.width.y())
+        grid = controls.layout()
+        for widget, position in ((controls.font, (1, 0)), (controls.size, (1, 1)),
+                                 (controls.width, (3, 0)), (controls.lines, (3, 1))):
+            self.assertEqual(grid.getItemPosition(grid.indexOf(widget))[:2], position)
+
     def test_mode_and_output(self):
         self.window.source.setText(str(Path("example.mp4").resolve()))
         self.assertTrue(self.window.output.text().endswith("example-captioned.mp4"))
@@ -67,7 +87,7 @@ class GuiTests(unittest.TestCase):
             self.window.subtitle_controls.lines.setCurrentIndex(2)
             self.assertEqual(self.window.preview.output.sample.style.font_size, 42)
             self.assertEqual(self.window.preview.output.sample.style.max_lines, 3)
-            self.assertLess(self.window.subtitle_controls.y(), self.window.source.y())
+            self.assertLess(self.window.subtitle_controls.geometry().right(), self.window.job_fields.geometry().left())
             self.window.preview_timer.stop()
             self.window.preview.close_media()
 

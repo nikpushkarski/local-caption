@@ -49,11 +49,15 @@ class SubtitleControls(QGroupBox):
         self.lines.addItem("3", 3)
         for column, (title, widget) in enumerate((("Font (bold)", self.font), ("Font size (px)", self.size),
                                                 ("Target chars / line", self.width), ("Maximum lines", self.lines))):
-            layout.addWidget(QLabel(title), 0, column)
-            layout.addWidget(widget, 1, column)
+            row, column = divmod(column, 2)
+            layout.addWidget(QLabel(title), row * 2, column)
+            layout.addWidget(widget, row * 2 + 1, column)
         self.hint = QLabel()
         self.hint.setWordWrap(True)
-        layout.addWidget(self.hint, 2, 0, 1, 4)
+        layout.addWidget(self.hint, 4, 0, 1, 2)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+        layout.setRowStretch(5, 1)
         for widget in (self.font, self.size, self.width, self.lines):
             widget.currentTextChanged.connect(self.on_change)
         self.set_mode(self.mode)

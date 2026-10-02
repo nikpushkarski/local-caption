@@ -10,7 +10,7 @@ import sys
 import tempfile
 import time
 
-from PySide6.QtCore import QDir, QProcess, QSettings, QTimer, QUrl
+from PySide6.QtCore import QDir, QProcess, QSettings, QTimer, QUrl, Qt
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox,
@@ -94,25 +94,33 @@ class Window(QMainWindow):
         self.preview = ComparisonPreview()
         job_layout.addWidget(self.preview)
         self.subtitle_controls = SubtitleControls()
-        job_layout.addWidget(self.subtitle_controls)
-        form = QFormLayout()
-        job_layout.addLayout(form)
+        self.job_fields = QGroupBox("Video and output")
+        form = QFormLayout(self.job_fields)
+        form.setFormAlignment(Qt.AlignmentFlag.AlignTop)
+        job_columns = QHBoxLayout()
+        job_columns.addWidget(self.subtitle_controls, 1)
+        job_columns.addWidget(self.job_fields, 1)
+        job_layout.addLayout(job_columns)
         self.source = FileField("Input video")
         self.output = FileField("Save output", "Output (*.mp4 *.srt)", save=True)
         self.srt = FileField("Existing subtitles", "SubRip (*.srt)")
         self.mode = QComboBox()
+        self.mode.setMinimumContentsLength(22)
+        self.mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
         for key, label in MODES.items():
             self.mode.addItem(label, key)
         self.language = QComboBox()
         self.language.addItems(["en", "ru", "auto"])
-        self.overwrite = QCheckBox("Allow replacing the output video after successful rendering")
+        self.overwrite = QCheckBox("Allow replacing the output video")
+        self.overwrite.setToolTip("Replace an existing output video only after successful rendering; confirmation is still required.")
         for label, field in [("Video", self.source), ("Action", self.mode), ("Output", self.output),
                              ("Existing SRT", self.srt), ("Language", self.language), ("", self.overwrite)]:
             form.addRow(label, field)
         layout.addWidget(self.inputs)
 
-        self.tools = QGroupBox("Local tools and model — choose files you trust")
+        self.tools = QGroupBox("Local tools and model")
         tools = QFormLayout(self.tools)
+        tools.setFormAlignment(Qt.AlignmentFlag.AlignTop)
         self.model = FileField("Local Whisper model", "Whisper checkpoint (*.pt)")
         self.ffmpeg = FileField("FFmpeg executable")
         self.ffprobe = FileField("FFprobe executable")
@@ -120,9 +128,14 @@ class Window(QMainWindow):
             default = shutil.which(key) or "" if key != "model" else ""
             field.setText(str(self.settings.value(key, default)))
             tools.addRow(key, field)
-        layout.addWidget(self.tools)
+        trust_note = QLabel("Choose local model and executable files you trust.")
+        trust_note.setWordWrap(True)
+        tools.addRow(trust_note)
         self.hardware = HardwarePanel(auto_scan=auto_scan_hardware)
-        layout.addWidget(self.hardware)
+        setup_columns = QHBoxLayout()
+        setup_columns.addWidget(self.tools, 1)
+        setup_columns.addWidget(self.hardware, 1)
+        layout.addLayout(setup_columns)
         note = QLabel("No automatic downloads. SRT files are always preserved using numbered names.\n"
                       "Burning re-encodes video; selectable tracks preserve the picture. Use originals to avoid double captions.")
         note.setWordWrap(True)
