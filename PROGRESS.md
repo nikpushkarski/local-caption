@@ -13,6 +13,8 @@
 - Rebuilt v0.4.2 CPU and CUDA editions. 64 tests per build (1 skip); packaged
   CPU burn/mux and packaged CUDA burn/mux plus real GPU medium-model transcription
   all passed. Third-party notices and the CUDA audit ship with both editions.
+  CUDA now compresses below GitHub's per-asset limit, so v0.4.2 needs just one
+  archive per edition instead of the old split CUDA download.
 
 ## Iteration 10 — releases and disk usage
 - Replaced the long README with a concise quickstart; Windows available, macOS WIP.

@@ -16,7 +16,7 @@ The Windows app bundles its Python libraries; GPU support is optional.
 
 ## Get started on Windows
 
-1. Download the **CPU edition** (~220 MB archive) from [GitHub Releases](https://github.com/nikpushkarski/local-caption/releases/latest). It works without an NVIDIA card and still supports hardware *video encoding* when FFmpeg does. For NVIDIA *transcription*, choose the larger **CUDA edition** (~2.4 GB download): get both numbered `.001` and `.002` parts and extract `.001` with [7-Zip](https://www.7-zip.org/). You only need **one** edition—do not combine their folders. Keep the extracted `LocalCaption` folder intact and run `LocalCaption.exe`. This is a portable, unsigned app—not an installer.
+1. Download the **CPU edition** (~190 MB archive) from [GitHub Releases](https://github.com/nikpushkarski/local-caption/releases/latest). It works without an NVIDIA card and still supports hardware *video encoding* when FFmpeg does. For NVIDIA *transcription*, choose the larger **CUDA edition** (~1.9 GB archive). Extract your chosen `.7z` with [7-Zip](https://www.7-zip.org/). You only need **one** edition—do not combine their folders. Keep the extracted `LocalCaption` folder intact and run `LocalCaption.exe`. This is a portable, unsigned app—not an installer.
 2. Select or drop a video onto the input preview.
 3. Select the local FFmpeg/FFprobe executables and, if transcribing, the Whisper model listed above.
 4. Choose an action and output name, adjust subtitles if you like, then press **Start**. CPU is the default. Compatible GPUs appear as optional choices for transcription and video encoding.

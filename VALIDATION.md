@@ -10,6 +10,8 @@
 - Both CPU and CUDA editions rebuilt from the merged MIT-licensed source. Each
   build passes 64 unit tests (1 Windows temporary-file skip); both include the
   project license, third-party notices and original wheel/CPython license texts.
+  Verified 7-Zip archives: CPU ~191 MiB, CUDA ~1832 MiB (one file under GitHub's
+  per-asset limit).
 - Packaged CPU worker burn and subtitle-track mux smoke tests pass. Packaged CUDA
   worker burn/mux plus `medium.pt` GPU (`cuda:0`) transcription/burn pass on an
   RTX 4070 Laptop GPU. FFmpeg and the model remained external.
