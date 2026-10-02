@@ -48,4 +48,4 @@ If PowerShell blocks the build script, use `-ExecutionPolicy Bypass` on that Pow
 
 macOS packaging is not implemented or tested yet. PyInstaller cannot produce a macOS app from Windows. See [VALIDATION.md](VALIDATION.md) for tested Windows scenarios and [PROGRESS.md](PROGRESS.md) for development checkpoints.
 
-**Disk space:** `dist/`, `build/`, `.tools/` and virtual environments are ignored, local artifacts—not Git history. CUDA builds include several GB of PyTorch libraries. Close running app versions before removing their build folders; you can regenerate either edition with the commands above.
+**Disk space:** `dist/`, `build/`, `.tools/` and virtual environments are ignored, local artifacts—not Git history. CUDA builds include several GB of PyTorch libraries. Close old app versions, then run `powershell -NoProfile -File scripts\clean-old-builds.ps1` to remove obsolete v0.3/v0.4 build copies. It skips any still-running version. The current CPU edition is kept; either edition can be rebuilt.
