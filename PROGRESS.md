@@ -1,6 +1,6 @@
 # Work checkpoints
 
-## Iteration 9 — compact two-column layout (v0.4.1, validation in progress)
+## Iteration 9 — compact two-column layout (v0.4.1, complete)
 - Under the previews/transport: Subtitles on the left, Video and output fields on
   the right. Subtitle settings now form a compact 2×2 grid.
 - Next row: Local tools and model on the left, Processing devices on the right.
@@ -11,7 +11,9 @@
   Native regression also checks a 1000px window with long GPU selections. The
   Windows offscreen plugin has inaccurate glyph widths, so native pixel-fit
   assertions run separately from structural layout checks.
-- Next: full tests, versioned build, final checkpoint.
+- Versioned v0.4.1 CUDA-capable build completed. Final suite: 64/64 passing,
+  no skips. Packaged sample playback visually checked; burn/mux smoke tests pass.
+- Documentation updated; current exe: dist/v0.4.1/LocalCaption/LocalCaption.exe.
 
 ## Iteration 8 — sample output and subtitle styling (complete, v0.4.0)
 - Show the input video in the output pane with fixed sample text immediately,

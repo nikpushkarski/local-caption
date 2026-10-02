@@ -1,5 +1,18 @@
 # Validated Windows checkpoint
 
+## v0.4.1 — compact two-column layout
+
+- Subtitles / Video and output share one row under the full-width previews.
+  Local tools and model / Processing devices share the next row.
+- Subtitle controls use a 2×2 grid. Device/action dropdown sizing no longer forces
+  the entire window wider when labels are long. Existing behavior is unchanged.
+- 64/64 tests pass after packaging, no skips. Structural layout checks plus a native
+  Windows font/layout test verify aligned columns without horizontal scrolling at
+  1120px and 1000px widths, including selected long GPU names.
+- Source and packaged native GUI layouts visually reviewed. Packaged sample
+  playback, GUI/worker lifecycle, FFmpeg burn and mux smoke tests pass.
+- Current release: `dist/v0.4.1/LocalCaption/LocalCaption.exe`.
+
 ## v0.4.0 — live sample captions and four style controls
 
 - Final rebuilt app: 62/62 tests pass, no skips. Original caption defaults still
@@ -129,7 +142,7 @@ references and the optional numba TBB backend. The tested CPU inference path doe
 not require those modules; actual frozen word-timestamp inference passed. These
 warnings are not evidence that every optional upstream capability is supported.
 
-The current output is `dist/v0.4.0/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
+The current output is `dist/v0.4.1/LocalCaption/LocalCaption.exe`, its worker exe, shared runtime
 folder and documentation. Build artifacts and private development tooling are
 intentionally not tracked in Git.
 
