@@ -18,8 +18,9 @@ def main(job_path: str) -> int:
 
     try:
         isolate_worker()
-        # Qt font metrics need a GUI application, but this worker has no windows.
-        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        # No windows are created, but use native font discovery on desktop OSes.
+        # Qt's Windows offscreen plugin can return box-glyph metrics instead.
+        os.environ["QT_QPA_PLATFORM"] = "windows" if os.name == "nt" else "cocoa" if sys.platform == "darwin" else "offscreen"
         from PySide6.QtGui import QGuiApplication
         app = QGuiApplication.instance() or QGuiApplication([])
         from .engine import Job, process

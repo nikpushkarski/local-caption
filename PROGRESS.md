@@ -11,7 +11,16 @@ and keep the architecture ready for a later macOS build. Leave backups untouched
 3. Offline processing worker, GUI, and safe output handling (complete; 20 tests passing).
    Real FFmpeg burn/mux integration verified, including silent video, Unicode/apostrophe
    paths, first-frame caption pixels, and unchanged edited SRT. Qt drag/drop events tested.
-4. Packaging, cancellation/transcription tests, documentation, final checkpoint (current).
+4. Packaging, cancellation/transcription tests, documentation (complete; final validation current).
+   24 tests passing, including Qt-driven source and frozen worker lifecycles.
+   Windows one-folder exe built; native desktop launch/close verified (exit 0).
+   Frozen worker burn, mux, and actual medium-model transcription+burn all passed.
+   Official medium SHA256 verified read-only before inference:
+   345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1.
+   Speech was generated locally using Windows System.Speech. No model downloaded.
+   Native screenshot reviewed. Found Windows offscreen Qt font discovery returns
+   box glyphs; switched the windowless worker to native desktop font discovery.
+   Rebuild + final regression required after that correction.
 
 ## Behavioral changes
 - Five explicit actions replace the nested console prompts. Mux takes the desired
