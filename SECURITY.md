@@ -65,8 +65,11 @@ not undergone an independent security audit or adversarial media fuzzing.
 
 ## Distribution
 
-The source has no blanket public license assigned on the user's behalf. Before
-publishing binaries, select a project license and review bundled dependency
-licenses/notices (notably Qt/PySide6 LGPL/commercial terms and PyTorch/Whisper).
-FFmpeg build licensing varies by enabled components. Keeping external binaries
-external does not replace your obligation to review redistribution terms.
+Local Caption's own source is MIT-licensed; see LICENSE. Bundled components
+keep their own licenses: see THIRD_PARTY_NOTICES.md and the `licenses/` folder
+included with new builds. The Qt Multimedia preview backend includes LGPL
+FFmpeg DLLs even though the FFmpeg/FFprobe *processing executables* are
+external. The CUDA edition additionally contains NVIDIA libraries with separate
+redistribution terms; review each build before sharing it. External tools and
+model files remain the user's responsibility. Previously published binaries may
+not contain these notices; rebuild before distributing them further.

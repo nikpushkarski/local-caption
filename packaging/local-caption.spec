@@ -14,6 +14,12 @@ analysis = Analysis(
     excludes=['auto_subtitle', 'ffmpeg', 'tkinter', 'matplotlib', 'IPython', 'pytest'],
     noarchive=False,
 )
+# The PySide6 hook pulls in Qt Virtual Keyboard even though this desktop app
+# never uses it. Unlike our Qt UI modules, that module is GPL-3.0/commercial
+# only. Do not redistribute its DLL/plugin in an MIT application.
+_gpl_only_qt = {'qt6virtualkeyboard.dll', 'qtvirtualkeyboardplugin.dll'}
+analysis.binaries = [entry for entry in analysis.binaries
+                     if Path(entry[0]).name.lower() not in _gpl_only_qt]
 pyz = PYZ(analysis.pure)
 gui = EXE(pyz, analysis.scripts, [], exclude_binaries=True,
           name='LocalCaption', console=False)
