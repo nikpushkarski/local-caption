@@ -7,11 +7,18 @@ The app has side-by-side video previews and can burn captions into an MP4, save 
 > [!IMPORTANT]
 > Windows app available. macOS support is work in progress.
 
+## Prerequisites
+
+- Trusted local **FFmpeg + FFprobe** executables (`ffmpeg.exe`, `ffprobe.exe`) with libass and libx264 support. Not bundled.
+- For transcription, a local **Whisper `.pt` model** from [OpenAI's official model download links](https://github.com/openai/whisper/blob/main/whisper/__init__.py#L17). Not bundled. I used `medium.pt` because it struck the right balance between accuracy and size.
+
+The Windows app bundles its Python libraries; GPU support is optional.
+
 ## Get started on Windows
 
 1. Download the **CPU edition** (~220 MB archive) from [GitHub Releases](https://github.com/nikpushkarski/local-caption/releases/latest). It works without an NVIDIA card and still supports hardware *video encoding* when FFmpeg does. For NVIDIA *transcription*, choose the larger **CUDA edition** (~2.4 GB download): get both numbered `.001` and `.002` parts and extract `.001` with [7-Zip](https://www.7-zip.org/). You only need **one** edition—do not combine their folders. Keep the extracted `LocalCaption` folder intact and run `LocalCaption.exe`. This is a portable, unsigned app—not an installer.
 2. Select or drop a video onto the input preview.
-3. Choose trusted local `ffmpeg.exe` and `ffprobe.exe` (from an FFmpeg build with libass and libx264). For transcription, also choose a local Whisper `.pt` model. **These files are not bundled.**
+3. Select the local FFmpeg/FFprobe executables and, if transcribing, the Whisper model listed above.
 4. Choose an action and output name, adjust subtitles if you like, then press **Start**. CPU is the default. Compatible GPUs appear as optional choices for transcription and video encoding.
 
 The output pane shows an immediate *sample*, not a rendered file. Use its dropdown after processing to compare with the real output. One set of playback controls operates both previews; synchronization is approximate.
@@ -50,7 +57,7 @@ powershell -NoProfile -File scripts\build-windows.ps1 -Variant cuda
 
 Run tests with `.venv-cpu\Scripts\python.exe -m unittest discover -s tests -v` (or `.venv\Scripts\python.exe` for CUDA). The two extras must not be combined.
 
-If PowerShell blocks the build script, use `-ExecutionPolicy Bypass` on that PowerShell invocation only. Builds go in `dist\v<VERSION>-cpu\LocalCaption` or `dist\v<VERSION>\LocalCaption`. Build dependencies require internet; running the app does not. FFmpeg and models remain external. Before redistributing binaries, review bundled dependency licenses; see [SECURITY.md](SECURITY.md).
+If PowerShell blocks the build script, use `-ExecutionPolicy Bypass` on that PowerShell invocation only. Builds go in `dist\v<VERSION>-cpu\LocalCaption` or `dist\v<VERSION>\LocalCaption`. Build dependencies require internet; running the app does not. Before redistributing binaries, review bundled dependency licenses; see [SECURITY.md](SECURITY.md).
 
 macOS packaging is not implemented or tested yet. PyInstaller cannot produce a macOS app from Windows. See [VALIDATION.md](VALIDATION.md) for tested Windows scenarios and [PROGRESS.md](PROGRESS.md) for development checkpoints.
 
