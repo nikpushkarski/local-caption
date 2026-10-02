@@ -8,7 +8,7 @@ foreach ($version in @('v0.3.0', 'v0.4.0')) {
     $running = @(Get-Process -Name LocalCaption,LocalCaptionWorker -ErrorAction SilentlyContinue |
         Where-Object { $_.Path -and $_.Path.StartsWith($folder + '\', [StringComparison]::OrdinalIgnoreCase) })
     if ($running.Count) {
-        Write-Warning "Keeping $folder: app/worker still running (PID: $(($running.Id -join ', '))). Close it yourself and rerun."
+        Write-Warning "Keeping ${folder}: app/worker still running (PID: $(($running.Id -join ', '))). Close it yourself and rerun."
         continue
     }
     if ($WhatIf) { Write-Host "Would remove: $folder"; continue }
