@@ -1,5 +1,17 @@
 # Work checkpoints
 
+## Iteration 8 — sample output and subtitle styling (in progress)
+- Show the input video in the output pane with fixed sample text immediately,
+  without running Whisper/FFmpeg or writing an output file. Reuse input video
+  frames for a live, synchronized sample canvas; keep real-output playback.
+- Four style controls between the preview transport and Video field: installed
+  font, auto/numeric source-pixel font size, target characters per line, max 1–3
+  lines. Defaults: Arial Bold, original auto sizing, 24 chars, 1 line, marked default.
+- Use one validated style/layout model for the sample and actual ASS rendering.
+  Preserve original timing/pause/punctuation rules and edited-SRT files.
+- Font/size only apply to burned subtitles; SRT/selectable tracks use player fonts.
+- Explicitly label sample vs rendered output; changing style returns to the sample.
+
 ## Iteration 7 — CPU/GPU task selection (complete, v0.3.0)
 - Separate transcription and burn-video selectors: CUDA inference and hardware
   video encoding are different capabilities. CPU remains the default.
