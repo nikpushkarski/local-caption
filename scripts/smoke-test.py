@@ -19,6 +19,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--worker", type=Path, default=Path(f"dist/v{__version__}/LocalCaption/LocalCaptionWorker.exe"))
 parser.add_argument("--model", type=Path)
 parser.add_argument("--speech", type=Path)
+parser.add_argument("--transcription-device", default="cpu")
+parser.add_argument("--video-encoder", default="cpu")
+parser.add_argument("--source-worker", action="store_true", help="Test Python source instead of the frozen worker")
 args = parser.parse_args()
 ffmpeg, ffprobe = shutil.which("ffmpeg"), shutil.which("ffprobe")
 if not ffmpeg or not ffprobe:
@@ -26,7 +29,7 @@ if not ffmpeg or not ffprobe:
 with tempfile.TemporaryDirectory(prefix="local-caption smoke ü '") as directory:
     root = Path(directory)
     source = root / "source.mp4"
-    command = [ffmpeg, "-v", "error", "-f", "lavfi", "-i", "color=c=blue:s=320x240:r=25:d=6"]
+    command = [ffmpeg, "-v", "error", "-f", "lavfi", "-i", "color=c=blue:s=640x360:r=25:d=6"]
     if args.speech:
         command += ["-i", str(args.speech.resolve()), "-c:a", "aac", "-shortest"]
     command += ["-c:v", "libx264", "-y", str(source)]
@@ -41,11 +44,13 @@ with tempfile.TemporaryDirectory(prefix="local-caption smoke ü '") as directory
         work.mkdir()
         output = root / f"{mode}.mp4"
         job = Job(str(source), str(output), mode, model=str(args.model.resolve()) if args.model else "",
-                  srt=str(srt), ffmpeg=ffmpeg, ffprobe=ffprobe)
+                  srt=str(srt), ffmpeg=ffmpeg, ffprobe=ffprobe,
+                  transcription_device=args.transcription_device, video_encoder=args.video_encoder)
         job_path = work / "job.json"
         job_path.write_text(json.dumps(asdict(job)), encoding="utf-8")
-        print(f"Testing packaged worker: {mode}", flush=True)
-        result = subprocess.run([str(args.worker.resolve()), "--worker", str(job_path)], capture_output=True, timeout=600)
+        print(f"Testing {'source' if args.source_worker else 'packaged'} worker: {mode} ({args.transcription_device}, {args.video_encoder})", flush=True)
+        worker = [sys.executable, "-m", "local_caption"] if args.source_worker else [str(args.worker.resolve())]
+        result = subprocess.run([*worker, "--worker", str(job_path)], capture_output=True, timeout=600)
         print(result.stdout.decode("utf-8", errors="replace"), flush=True)
         if result.returncode:
             print(result.stderr.decode("utf-8", errors="replace"))

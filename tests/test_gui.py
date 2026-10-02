@@ -25,7 +25,7 @@ class GuiTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        self.window = Window()
+        self.window = Window(auto_scan_hardware=False)
 
     def tearDown(self):
         self.window.close()

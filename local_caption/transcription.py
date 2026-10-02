@@ -4,7 +4,7 @@ import importlib
 from types import SimpleNamespace
 
 
-def transcribe(model, audio, language, emit):
+def transcribe(model, audio, language, emit, device="cpu"):
     module = importlib.import_module("whisper.transcribe")
     original = module.tqdm
 
@@ -12,7 +12,7 @@ def transcribe(model, audio, language, emit):
         def __init__(self, total, **kwargs):
             self.total = total
             self.done = 0
-            emit("status", "Transcribing locally (CPU, beam 10); first checkpoint may take several minutes…")
+            emit("status", f"Transcribing locally ({device}, beam 10); first checkpoint may take several minutes…")
 
         def __enter__(self):
             return self
@@ -28,6 +28,6 @@ def transcribe(model, audio, language, emit):
         # Worker process is single-job: no global changes leak into other jobs/UI.
         module.tqdm = SimpleNamespace(tqdm=Progress)
         return model.transcribe(audio, beam_size=10, language=None if language == "auto" else language,
-                                fp16=False, word_timestamps=True, verbose=None)
+                                fp16=device.startswith("cuda:"), word_timestamps=True, verbose=None)
     finally:
         module.tqdm = original

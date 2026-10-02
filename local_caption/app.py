@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 
 from .engine import Job, MODES
 from .preview import ComparisonPreview
+from .hardware_ui import HardwarePanel
 
 
 class FileField(QWidget):
@@ -63,7 +64,7 @@ class FileField(QWidget):
 
 
 class Window(QMainWindow):
-    def __init__(self):
+    def __init__(self, auto_scan_hardware=True):
         super().__init__()
         self.setWindowTitle("Local Caption — offline subtitles")
         self.resize(1120, 940)
@@ -117,6 +118,8 @@ class Window(QMainWindow):
             field.setText(str(self.settings.value(key, default)))
             tools.addRow(key, field)
         layout.addWidget(self.tools)
+        self.hardware = HardwarePanel(auto_scan=auto_scan_hardware)
+        layout.addWidget(self.hardware)
         note = QLabel("No automatic downloads. SRT files are always preserved using numbered names.\n"
                       "Burning re-encodes video; selectable tracks preserve the picture. Use originals to avoid double captions.")
         note.setWordWrap(True)
@@ -155,6 +158,8 @@ class Window(QMainWindow):
         self.source.edit.textChanged.connect(lambda: self.preview_timer.start())
         self.output.edit.textChanged.connect(lambda: self.preview_timer.start())
         self.mode.currentIndexChanged.connect(lambda: self.preview_timer.start())
+        self.ffmpeg.edit.textChanged.connect(lambda: self.hardware.set_ffmpeg(self.ffmpeg.text()))
+        self.hardware.set_ffmpeg(self.ffmpeg.text())
 
     def refresh_previews(self):
         if self.process is not None:
@@ -180,6 +185,7 @@ class Window(QMainWindow):
         self.model.setEnabled(transcribing)
         self.language.setEnabled(transcribing)
         self.overwrite.setEnabled(self.mode.currentData() != "transcribe")
+        self.hardware.set_mode(self.mode.currentData())
         self.suggest_output()
 
     def dragEnterEvent(self, event):
@@ -203,7 +209,9 @@ class Window(QMainWindow):
             return str(Path(field.text()).expanduser().resolve()) if field.text() else ""
         job = Job(source=absolute(self.source), output=absolute(self.output), mode=self.mode.currentData(),
                   model=absolute(self.model), srt=absolute(self.srt), ffmpeg=absolute(self.ffmpeg),
-                  ffprobe=absolute(self.ffprobe), language=self.language.currentText(), overwrite=self.overwrite.isChecked())
+                  ffprobe=absolute(self.ffprobe), language=self.language.currentText(), overwrite=self.overwrite.isChecked(),
+                  transcription_device=self.hardware.transcription.currentData() or "cpu",
+                  video_encoder=self.hardware.rendering.currentData() or "cpu")
         try:
             job.validate()
             if job.overwrite and job.mode != "transcribe" and Path(job.output).exists():
@@ -227,6 +235,7 @@ class Window(QMainWindow):
         self.started = time.monotonic()
         self.inputs.setEnabled(False)
         self.tools.setEnabled(False)
+        self.hardware.set_running(True)
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
         self.status.setText("Starting local worker…")
@@ -295,6 +304,7 @@ class Window(QMainWindow):
         self.process = None
         self.inputs.setEnabled(True)
         self.tools.setEnabled(True)
+        self.hardware.set_running(False)
         self.start_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.cleanup()
@@ -338,6 +348,7 @@ class Window(QMainWindow):
             if self.process is not None:
                 event.ignore()
                 return
+        self.hardware.shutdown()
         self.preview_timer.stop()
         self.preview.close_media()
         self.cleanup()

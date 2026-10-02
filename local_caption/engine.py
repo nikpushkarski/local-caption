@@ -9,6 +9,7 @@ from typing import Callable
 
 from .captions import display_dimensions, fit_ass_captions, single_line_captions
 from .srt import save_new_srt
+from .hardware import check_encoder, encoder_args, valid_inference_device
 
 MODES = {
     "transcribe_burn": "Transcribe + burn captions into video",
@@ -30,8 +31,13 @@ class Job:
     ffprobe: str = ""
     language: str = "en"
     overwrite: bool = False
+    transcription_device: str = "cpu"
+    video_encoder: str = "cpu"
 
     def validate(self):
+        if not valid_inference_device(self.transcription_device):
+            raise ValueError("Unsupported transcription device selection.")
+        encoder_args(self.video_encoder)  # Validate the allowlist before running any tool.
         if self.mode not in MODES:
             raise ValueError("Unknown processing mode.")
         if self.language not in {"en", "ru", "auto"}:
@@ -96,6 +102,11 @@ def publish(staged: Path, output: Path, overwrite: bool):
 
 def process(job: Job, directory: Path, emit: Callable):
     job.validate()
+    if job.mode in {"burn", "transcribe_burn"} and job.video_encoder != "cpu":
+        emit("status", f"Checking selected GPU encoder ({job.video_encoder})…")
+        compatible, detail = check_encoder(job.ffmpeg, job.video_encoder)
+        if not compatible:
+            raise RuntimeError("Selected GPU encoder is no longer available. Rescan or choose CPU.\n" + detail)
     source, output = Path(job.source), Path(job.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     emit("status", "Inspecting video…")
@@ -121,16 +132,32 @@ def process(job: Job, directory: Path, emit: Callable):
             import whisper
         except ImportError as error:
             raise RuntimeError("Transcription dependencies are missing. Install the transcribe extra or use the full build.") from error
-        emit("status", "Loading local Whisper model (CPU)…")
-        model = whisper.load_model(str(Path(job.model).resolve()), device="cpu")
-        from .transcription import transcribe
-        result = transcribe(model, np.fromfile(audio, dtype=np.float32), job.language, emit)
+        import torch
+        device = job.transcription_device
+        if device != "cpu":
+            index = int(device.partition(":")[2])
+            if not torch.cuda.is_available() or index >= torch.cuda.device_count():
+                raise RuntimeError("Selected CUDA GPU is unavailable. Rescan or choose CPU; no automatic fallback was made.")
+        emit("status", f"Loading local Whisper model ({device})…")
+        # Deserialize on CPU first to avoid simultaneously keeping checkpoint and
+        # model copies on the GPU. Keep Whisper's float32 LayerNorm parameters.
+        try:
+            model = whisper.load_model(str(Path(job.model).resolve()), device="cpu")
+            if device != "cpu":
+                model = model.to(device)
+            from .transcription import transcribe
+            result = transcribe(model, np.fromfile(audio, dtype=np.float32), job.language, emit, device=device)
+        except torch.cuda.OutOfMemoryError as error:
+            raise RuntimeError("Not enough GPU memory for this model/audio. Choose CPU, a smaller model, or free GPU memory and rescan.") from error
         captions = single_line_captions(result["segments"])
         if not captions:
             raise ValueError("No speech captions were produced. No output was replaced.")
         srt = save_new_srt(output.with_suffix(".srt"), captions)
         emit("saved", str(srt))
         del model, result
+        if device != "cpu":
+            with torch.cuda.device(device):
+                torch.cuda.empty_cache()
         if job.mode == "transcribe":
             return
     else:
@@ -145,7 +172,7 @@ def process(job: Job, directory: Path, emit: Callable):
                    "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?", "-map", "1:0",
                    "-c", "copy", "-c:s", "mov_text", "-movflags", "+faststart", "-y", str(staged)]
     else:
-        emit("status", "Fitting captions and rendering video…")
+        emit("status", f"Fitting captions on CPU and encoding video ({job.video_encoder})…")
         # Use short local names so filter paths never need shell/filter escaping.
         import shutil
         shutil.copyfile(srt, directory / "captions.srt")
@@ -159,7 +186,7 @@ def process(job: Job, directory: Path, emit: Callable):
         command = [job.ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error",
                    "-protocol_whitelist", "file,pipe", "-i", str(source),
                    "-map", "0:v:0", "-map", "0:a?", "-vf", "ass=captions.ass,pad=ceil(iw/2)*2:ceil(ih/2)*2",
-                   "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
+                   *encoder_args(job.video_encoder),
                    "-c:a", "aac", "-movflags", "+faststart", "-y", str(staged)]
     run_tool(command, directory)
     if not staged.is_file() or staged.stat().st_size == 0:

@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-caption"
-version = "0.2.1"
+version = "0.3.0"
 description = "Offline desktop captions without auto_subtitle"
 requires-python = ">=3.12,<3.14"
 dependencies = ["PySide6==6.10.2"]
 
 [project.optional-dependencies]
 transcribe = ["openai-whisper==20250625", "torch==2.10.0"]
+cuda = ["openai-whisper==20250625", "torch==2.10.0"]
 build = ["pyinstaller==6.19.0"]
 
 [project.gui-scripts]
@@ -19,10 +20,21 @@ local-caption = "local_caption.app:main"
 [tool.setuptools.packages.find]
 include = ["local_caption*"]
 
+[tool.uv]
+conflicts = [[{ extra = "transcribe" }, { extra = "cuda" }]]
+
 [tool.uv.sources]
-torch = [{ index = "pytorch-cpu", marker = "sys_platform != 'darwin'" }]
+torch = [
+    { index = "pytorch-cpu", extra = "transcribe", marker = "sys_platform != 'darwin'" },
+    { index = "pytorch-cu128", extra = "cuda", marker = "sys_platform != 'darwin'" },
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true

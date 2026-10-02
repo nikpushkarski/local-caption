@@ -11,6 +11,15 @@
 - This machine reports an RTX 4070 Laptop GPU (8 GB) and Intel UHD Graphics.
   Existing package uses CPU-only PyTorch; add a reproducible CUDA build variant
   rather than falsely declaring the RTX incompatible or silently using CPU.
+- Implemented background probe UI, disabled GPU placeholders, task-specific mode
+  handling, allowlisted encode options and explicit CUDA inference (FP16 decoding).
+- Added mutually exclusive `transcribe` (CPU-only) and `cuda` dependency extras.
+  Installed official PyTorch 2.10.0+cu128 in the development environment; no drivers
+  or models downloaded/changed. CUDA package download was ~2.7 GiB.
+- Live probes: RTX CUDA + NVENC and Intel QSV pass; AMD AMF rejected (no AMD device).
+  The first 128px probe was below NVENC's minimum frame size; changed to 640x360.
+- Real source-worker medium-model CUDA transcription + NVENC render passed; Intel
+  QSV rendering and mux also passed. Next: full tests, CUDA packaging and docs.
 
 ## Iteration 6 — native preview drop fix (v0.2.1, complete)
 - Reproduced the missed path: QVideoWidget embeds a native QVideoWindow whose

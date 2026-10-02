@@ -2,6 +2,9 @@ import sys
 
 
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == "--probe-devices":
+        from .hardware import main as probe_main
+        return probe_main(sys.argv[2])
     if len(sys.argv) == 3 and sys.argv[1] == "--worker":
         from .worker import main as worker_main
         return worker_main(sys.argv[2])
