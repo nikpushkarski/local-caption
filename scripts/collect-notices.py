@@ -55,9 +55,30 @@ def main() -> None:
             license_name = codec.avcodec_license().decode('ascii')
             if license_name != 'LGPL version 2.1 or later':
                 raise RuntimeError(f'Unexpected bundled FFmpeg license: {license_name}')
-    cuda_dll = app / '_internal' / 'torch' / 'lib' / 'cudart64_12.dll'
+    torch_lib = app / '_internal' / 'torch' / 'lib'
+    cuda_dll = torch_lib / 'cudart64_12.dll'
     if cuda_dll.is_file() != (variant == 'cuda'):
         raise RuntimeError(f'CUDA runtime mismatch for {variant} build')
+    # Reviewed against CUDA 12.8 EULA Attachment A and cuDNN 9.10.2 runtime
+    # grant. Changes to the wheel must trigger a fresh per-file audit.
+    approved_cuda_dlls = {
+        'cublas64_12.dll', 'cublaslt64_12.dll', 'cudart64_12.dll',
+        'cudnn64_9.dll', 'cudnn_adv64_9.dll', 'cudnn_cnn64_9.dll',
+        'cudnn_engines_precompiled64_9.dll', 'cudnn_engines_runtime_compiled64_9.dll',
+        'cudnn_graph64_9.dll', 'cudnn_heuristic64_9.dll', 'cudnn_ops64_9.dll',
+        'cufft64_11.dll', 'cufftw64_11.dll', 'cupti64_2025.1.1.dll',
+        'curand64_10.dll', 'cusolver64_11.dll', 'cusparse64_12.dll',
+        'nvjitlink_120_0.dll', 'nvtoolsext64_1.dll',
+        'nvrtc-builtins64_128.dll', 'nvrtc64_120_0.dll',
+    }
+    present = {p.name.lower() for p in torch_lib.glob('*.dll')
+               if p.name.lower().startswith(('cu', 'nv'))}
+    expected = approved_cuda_dlls if variant == 'cuda' else set()
+    if variant == 'cuda' and metadata.version('torch') != '2.10.0+cu128':
+        raise RuntimeError('New CUDA PyTorch wheel requires a new redistribution audit')
+    if present != expected:
+        raise RuntimeError(f'CUDA DLL audit mismatch: unexpected={sorted(present - expected)}, '
+                           f'missing={sorted(expected - present)}; see CUDA_REDISTRIBUTION.md')
     print(f'Bundled original wheel/CPython notices and audited {variant} DLLs in {app}')
 
 

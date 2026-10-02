@@ -36,11 +36,13 @@ does **not** change the licenses of those components.
 - **CUDA edition only**: PyTorch's CUDA wheel also packages NVIDIA CUDA,
   cuBLAS, cuDNN and other NVIDIA DLLs under `_internal/torch/lib/`.
   PyTorch's wheel `LICENSE`/`NOTICE` are copied, but NVIDIA components have
-  [separate CUDA redistribution terms](https://docs.nvidia.com/cuda/eula/index.html)
-  and [cuDNN terms](https://docs.nvidia.com/deeplearning/cudnn/sla/index.html).
-  **Review the specific DLLs and applicable NVIDIA terms before distributing
-  each CUDA build**; the MIT license and PyTorch BSD notice alone are not
-  permission to redistribute NVIDIA software.
+  [separate CUDA 12.8 redistribution terms](https://docs.nvidia.com/cuda/archive/12.8.0/eula/index.html)
+  and [cuDNN 9.10.2 terms](https://docs.nvidia.com/deeplearning/cudnn/backend/v9.10.2/reference/eula.html).
+  [CUDA_REDISTRIBUTION.md](CUDA_REDISTRIBUTION.md) inventories the actual
+  audited DLLs, excludes three unneeded/unlisted ones, and records the
+  remaining `nvJitLink` filename ambiguity. That audit applies only to the
+  **newly rebuilt** CUDA distribution, not the previously published release.
+  The MIT license and PyTorch BSD notice do not license NVIDIA software.
 
 The license texts in `licenses/` for GNU components come from the
 [SPDX license list](https://github.com/spdx/license-list-data). License and
