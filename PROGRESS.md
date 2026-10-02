@@ -1,5 +1,17 @@
 # Work checkpoints
 
+## Iteration 7 — CPU/GPU task selection (in progress)
+- Separate transcription and burn-video selectors: CUDA inference and hardware
+  video encoding are different capabilities. CPU remains the default.
+- Scan in an isolated background process, inventory adapters, test CUDA kernels
+  and short FFmpeg hardware-encode operations before enabling GPU entries.
+- Disable unavailable GPU choices with exact text `no compatible GPU found` and
+  provide diagnostic reasons. Rescan on tool changes; allow manual refresh.
+- Mux/SRT-only actions must not pretend to benefit from GPU video encoding.
+- This machine reports an RTX 4070 Laptop GPU (8 GB) and Intel UHD Graphics.
+  Existing package uses CPU-only PyTorch; add a reproducible CUDA build variant
+  rather than falsely declaring the RTX incompatible or silently using CPU.
+
 ## Iteration 6 — native preview drop fix (v0.2.1, complete)
 - Reproduced the missed path: QVideoWidget embeds a native QVideoWindow whose
   drag events never reach the outer QWidget's overrides. Previous synthetic
