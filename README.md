@@ -51,4 +51,13 @@ If PowerShell blocks the build script, use `-ExecutionPolicy Bypass` on that Pow
 
 macOS packaging is not implemented or tested yet. PyInstaller cannot produce a macOS app from Windows. See [VALIDATION.md](VALIDATION.md) for tested Windows scenarios and [PROGRESS.md](PROGRESS.md) for development checkpoints.
 
-**Disk space:** `dist/`, `build/`, `.tools/` and virtual environments are ignored, local artifacts—not Git history. CUDA builds include several GB of PyTorch libraries. Close old app versions, then run `powershell -NoProfile -File scripts\clean-old-builds.ps1` to remove obsolete v0.3/v0.4 build copies. It skips any still-running version. The current CPU edition is kept; either edition can be rebuilt.
+## Clean up after building
+
+Once you have saved the build you want **outside this repository**, run from the project folder:
+
+```powershell
+powershell -NoProfile -File scripts\reset-to-clone.ps1          # preview deletions
+powershell -NoProfile -File scripts\reset-to-clone.ps1 -Apply   # type DELETE to confirm
+```
+
+This removes **every ignored and untracked file** (including all `dist/` builds, `.venv*` environments, `.tools/` downloads, and any media/models you placed here). It leaves Git history and tracked source intact. Move files you want to keep elsewhere first. It refuses to run if tracked files have uncommitted changes or an app/process is running from this folder; close them yourself and retry. If PowerShell blocks the script, add `-ExecutionPolicy Bypass` to the PowerShell invocation. Rebuilding later requires reinstalling dependencies.
