@@ -1,8 +1,9 @@
 # Windows CUDA binary redistribution audit
 
-Audited 2026-10-02 against the **rebuilt, not yet published** `dist/v0.4.1/LocalCaption`
-from PyTorch **2.10.0+cu128** (CUDA 12.8; cuDNN 9.10.2). The existing v0.4.1
-GitHub CUDA download is a **different, older bundle** and does not pass this audit.
+Audited 2026-10-02 against the new `dist/v0.4.2/LocalCaption` build
+from PyTorch **2.10.0+cu128** (CUDA 12.8; cuDNN 9.10.2). The former v0.4.1
+GitHub CUDA download was a **different, older bundle**, did not pass this audit,
+and was withdrawn.
 This is a technical inventory against the published terms, **not legal advice or a
 blanket authorization to redistribute future builds**.
 
@@ -56,10 +57,9 @@ RTX 4070 Laptop GPU probe (matrix multiplication and FFT), plus an end-to-end
 DLLs. This proves the tested workflow works; it cannot prove every possible
 CUDA workload or driver configuration works.
 
-**Release action:** merge the licensing PR, rebuild both editions from a *new*
-tag, include `THIRD_PARTY_NOTICES.md` and `licenses/`, and replace/retire the
-old CUDA asset. Do not treat the old v0.4.1 CUDA archive as covered by this
-inventory. If keeping the `nvJitLink` naming ambiguity is unacceptable, seek
+**Release action:** distribute only rebuilt binaries from a new tag with
+`THIRD_PARTY_NOTICES.md` and `licenses/`; the withdrawn v0.4.1 CUDA archive
+is not covered by this inventory. If keeping the `nvJitLink` naming ambiguity is unacceptable, seek
 written clarification from NVIDIA at the contact in its cuDNN agreement before
 publishing a new CUDA edition. Re-check the exact binary inventory and current
 agreements for every subsequent dependency update.

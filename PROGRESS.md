@@ -1,5 +1,19 @@
 # Work checkpoints
 
+> Historical checkpoint log. v0.1.0–v0.4.1 GitHub binary releases were withdrawn
+> on 2026-10-02 because their distribution lacked third-party notices and the
+> v0.4.1 CUDA archive included unreviewed NVIDIA DLLs. Source tags remain.
+> See [CUDA_REDISTRIBUTION.md](CUDA_REDISTRIBUTION.md) for the v0.4.2 audit.
+
+## Iteration 11 — licensing and v0.4.2 replacement
+- Reviewed and merged PR #1: MIT license, third-party notices, removal of the
+  unused GPL-only Qt Virtual Keyboard plugin, and audited CUDA DLL allowlist.
+- Withdrew all historical GitHub Releases (v0.1.0, v0.2.0, v0.2.1, v0.4.1)
+  on 2026-10-02. Git tags remain for source history; old binaries are not offered.
+- Rebuilt v0.4.2 CPU and CUDA editions. 64 tests per build (1 skip); packaged
+  CPU burn/mux and packaged CUDA burn/mux plus real GPU medium-model transcription
+  all passed. Third-party notices and the CUDA audit ship with both editions.
+
 ## Iteration 10 — releases and disk usage
 - Replaced the long README with a concise quickstart; Windows available, macOS WIP.
 - Published tested Windows archives on GitHub for v0.1.0, v0.2.0, v0.2.1 and

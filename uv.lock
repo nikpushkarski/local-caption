@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "sys_platform != 'darwin' and extra != 'extra-13-local-caption-cuda' and extra == 'extra-13-local-caption-transcribe'",
@@ -188,7 +188,7 @@ wheels = [
 
 [[package]]
 name = "local-caption"
-version = "0.4.1"
+version = "0.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "pyside6" },

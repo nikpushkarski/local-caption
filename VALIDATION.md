@@ -1,5 +1,22 @@
 # Validated Windows checkpoint
 
+> The historical binaries described below (v0.1.0–v0.4.1) were withdrawn from
+> GitHub on 2026-10-02. They did not include the updated third-party notices;
+> the old v0.4.1 CUDA bundle also included unreviewed NVIDIA DLLs. Keep the
+> historical test record separate from current distribution status.
+
+## v0.4.2 — replacement Windows builds (2026-10-02)
+
+- Both CPU and CUDA editions rebuilt from the merged MIT-licensed source. Each
+  build passes 64 unit tests (1 Windows temporary-file skip); both include the
+  project license, third-party notices and original wheel/CPython license texts.
+- Packaged CPU worker burn and subtitle-track mux smoke tests pass. Packaged CUDA
+  worker burn/mux plus `medium.pt` GPU (`cuda:0`) transcription/burn pass on an
+  RTX 4070 Laptop GPU. FFmpeg and the model remained external.
+- The CUDA bundle contains only the 21 inventoried NVIDIA DLLs; the three
+  unreviewed/unneeded extras are absent. The collector rejects unexpected CUDA
+  DLLs or a changed CUDA PyTorch wheel. See [CUDA_REDISTRIBUTION.md](CUDA_REDISTRIBUTION.md).
+
 ## Release packaging and CPU edition
 
 - Git-tracked source remains under 1 MB. Local `dist/`, `.venv*`, `build/` and
@@ -9,8 +26,8 @@
   `medium.pt` transcription, burn and mux. Hardware video encoding remains possible
   when the user's external FFmpeg supports it; CUDA transcription is disabled.
 - The v0.4.1 CUDA edition is optional: 4.47 GiB extracted, ~2.4 GiB archived in
-  two parts. Both editions are published on GitHub with SHA-256 checksums. Older
-  Windows releases v0.1.0, v0.2.0 and v0.2.1 were also uploaded and smoke-tested.
+  two parts. These historical editions were withdrawn from GitHub on 2026-10-02.
+  Older Windows releases v0.1.0, v0.2.0 and v0.2.1 had also been smoke-tested.
 - v0.3.0/v0.4.0 are still running on the developer's machine. Their ignored build
   directories were retained rather than terminating a user process; other inactive
   duplicate artifacts and local release archives were cleaned after upload.

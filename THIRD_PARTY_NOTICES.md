@@ -41,7 +41,7 @@ does **not** change the licenses of those components.
   [CUDA_REDISTRIBUTION.md](CUDA_REDISTRIBUTION.md) inventories the actual
   audited DLLs, excludes three unneeded/unlisted ones, and records the
   remaining `nvJitLink` filename ambiguity. That audit applies only to the
-  **newly rebuilt** CUDA distribution, not the previously published release.
+  **newly rebuilt** CUDA distribution, not the withdrawn older release.
   The MIT license and PyTorch BSD notice do not license NVIDIA software.
 
 The license texts in `licenses/` for GNU components come from the
