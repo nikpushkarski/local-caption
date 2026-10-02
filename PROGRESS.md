@@ -8,8 +8,19 @@ and keep the architecture ready for a later macOS build. Leave backups untouched
 ## Iterations
 1. Audit + repository checkpoint (complete).
 2. Local subtitle core and regression tests (complete; 12 passing).
-3. Offline processing worker, GUI, and safe output handling.
-4. Packaging, integration tests, documentation, final checkpoint.
+3. Offline processing worker, GUI, and safe output handling (complete; 20 tests passing).
+   Real FFmpeg burn/mux integration verified, including silent video, Unicode/apostrophe
+   paths, first-frame caption pixels, and unchanged edited SRT. Qt drag/drop events tested.
+4. Packaging, cancellation/transcription tests, documentation, final checkpoint (current).
+
+## Behavioral changes
+- Five explicit actions replace the nested console prompts. Mux takes the desired
+  existing video as input and writes a separate MP4 (source is never replaced).
+- GUI shows elapsed time, activity and confirmed transcription checkpoints instead
+  of a history-based estimated ETA. This avoids presenting guesses as progress.
+- Windows Job Object ties FFmpeg lifetime to worker lifetime; POSIX uses process groups.
+- GUI owns staging directory on the output volume so worker cancellation can be cleaned.
+- Atomic no-clobber output publication uses hard links (fails safely if unsupported).
 
 ## Audit / decisions
 - Backup `sandbox_auto_subtitle.py` imports only `auto_subtitle.utils.write_srt`.
