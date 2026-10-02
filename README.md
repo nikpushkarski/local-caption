@@ -88,6 +88,10 @@ The initial development environment also has a repository-local uv at
 powershell -NoProfile -File scripts\build-windows.ps1
 ```
 
+If PowerShell blocks this locally reviewed script, use a **process-only** override:
+`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build-windows.ps1`.
+This does not change the machine/user execution policy.
+
 Build on Windows x64. Launch the GUI exe, not `LocalCaptionWorker.exe`. The separate
 console worker provides reliable JSON progress pipes in a windowed PyInstaller
 build. FFmpeg and model files are **external**, intentionally not redistributed.
@@ -95,7 +99,7 @@ Before sharing the app publicly, review third-party licenses and signing needs.
 
 ### Tests
 
-The standard-library unittest suite covers caption splitting, SRT formatting,
+The 25-test standard-library unittest suite covers caption splitting, SRT formatting,
 Unicode, no-clobber publication, source preservation, actual Qt drag/drop, worker
 cancellation, and FFmpeg rendering/muxing. Media tests skip if FFmpeg/FFprobe are
 not on PATH. No test downloads models.

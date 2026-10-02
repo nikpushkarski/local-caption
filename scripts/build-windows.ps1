@@ -9,6 +9,6 @@ if (-not $SkipTests) {
 }
 & $python -m PyInstaller --noconfirm --clean packaging/local-caption.spec
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
-Copy-Item README.md, SECURITY.md -Destination dist/LocalCaption
+Copy-Item README.md, SECURITY.md, VALIDATION.md -Destination dist/LocalCaption
 Write-Host 'Built dist\LocalCaption\LocalCaption.exe. Distribute the ENTIRE LocalCaption folder.'
 Write-Host 'Models and FFmpeg/FFprobe remain external. See README.md.'

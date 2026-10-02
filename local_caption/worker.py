@@ -8,6 +8,14 @@ import sys
 import traceback
 
 
+def font_application():
+    # No windows are created, but use native font discovery on desktop OSes.
+    # Qt's Windows offscreen plugin can return box-glyph metrics instead.
+    os.environ["QT_QPA_PLATFORM"] = "windows" if os.name == "nt" else "cocoa" if sys.platform == "darwin" else "offscreen"
+    from PySide6.QtGui import QGuiApplication
+    return QGuiApplication.instance() or QGuiApplication([])
+
+
 def main(job_path: str) -> int:
     from .process_tree import isolate_worker
     protocol = sys.stdout
@@ -18,11 +26,7 @@ def main(job_path: str) -> int:
 
     try:
         isolate_worker()
-        # No windows are created, but use native font discovery on desktop OSes.
-        # Qt's Windows offscreen plugin can return box-glyph metrics instead.
-        os.environ["QT_QPA_PLATFORM"] = "windows" if os.name == "nt" else "cocoa" if sys.platform == "darwin" else "offscreen"
-        from PySide6.QtGui import QGuiApplication
-        app = QGuiApplication.instance() or QGuiApplication([])
+        app = font_application()
         from .engine import Job, process
         path = Path(job_path).resolve()
         job = Job(**json.loads(path.read_text(encoding="utf-8")))
