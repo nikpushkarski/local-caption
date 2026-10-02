@@ -7,6 +7,8 @@ The app has side-by-side video previews and can burn captions into an MP4, save 
 > [!IMPORTANT]
 > Windows app available. macOS support is work in progress.
 
+<img width="1220" height="1389" alt="LocalCaption_aBRGTOzj7S" src="https://github.com/user-attachments/assets/f859deb0-efcd-4ad7-9551-e74c1bf8cce7" />
+
 ## Prerequisites
 
 - Trusted local **[FFmpeg + FFprobe](https://ffmpeg.org/download.html)** executables (`ffmpeg.exe`, `ffprobe.exe`) with libass and libx264 support. Not bundled.
