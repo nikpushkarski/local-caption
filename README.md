@@ -1,8 +1,11 @@
 # Local Caption
 
-**Windows app available. macOS support is work in progress.**
+Add hard subs to your videos and generate SRT files. Offline, with no subscriptions, no accounts, no telemetry, and other bullshit. 
 
-Make short, offline subtitles for videos. No `auto_subtitle`, cloud API, telemetry or automatic model downloads. The app has side-by-side video previews and can burn captions into an MP4, save an SRT, or add a selectable subtitle track.
+The app has side-by-side video previews and can burn captions into an MP4, save an SRT, or add a selectable subtitle track.
+
+> [!IMPORTANT]
+> Windows app available. macOS support is work in progress.
 
 ## Get started on Windows
 
