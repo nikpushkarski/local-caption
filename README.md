@@ -9,7 +9,7 @@ The app has side-by-side video previews and can burn captions into an MP4, save 
 
 ## Prerequisites
 
-- Trusted local **FFmpeg + FFprobe** executables (`ffmpeg.exe`, `ffprobe.exe`) with libass and libx264 support. Not bundled.
+- Trusted local **[FFmpeg + FFprobe](https://ffmpeg.org/download.html)** executables (`ffmpeg.exe`, `ffprobe.exe`) with libass and libx264 support. Not bundled.
 - For transcription, a local **Whisper `.pt` model** from [OpenAI's official model download links](https://github.com/openai/whisper/blob/main/whisper/__init__.py#L17). Not bundled. I used `medium.pt` because it struck the right balance between accuracy and size.
 
 The Windows app bundles its Python libraries; GPU support is optional.
