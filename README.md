@@ -57,7 +57,7 @@ powershell -NoProfile -File scripts\build-windows.ps1 -Variant cuda
 
 Run tests with `.venv-cpu\Scripts\python.exe -m unittest discover -s tests -v` (or `.venv\Scripts\python.exe` for CUDA). The two extras must not be combined.
 
-If PowerShell blocks the build script, use `-ExecutionPolicy Bypass` on that PowerShell invocation only. Builds go in `dist\v<VERSION>-cpu\LocalCaption` or `dist\v<VERSION>\LocalCaption`. Build dependencies require internet; running the app does not. Before redistributing binaries, review bundled dependency licenses; see [SECURITY.md](SECURITY.md).
+If PowerShell blocks the build script, use `-ExecutionPolicy Bypass` on that PowerShell invocation only. Builds go in `dist\v<VERSION>-cpu\LocalCaption` or `dist\v<VERSION>\LocalCaption`. Build dependencies require internet; running the app does not. Local Caption is [MIT-licensed](LICENSE); bundled libraries retain their own licenses. Before redistributing binaries, review [third-party notices](THIRD_PARTY_NOTICES.md) and [SECURITY.md](SECURITY.md).
 
 macOS packaging is not implemented or tested yet. PyInstaller cannot produce a macOS app from Windows. See [VALIDATION.md](VALIDATION.md) for tested Windows scenarios and [PROGRESS.md](PROGRESS.md) for development checkpoints.
 

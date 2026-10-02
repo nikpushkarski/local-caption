@@ -21,6 +21,9 @@ if (-not $SkipTests) {
 $workRoot = Join-Path (Get-Location) "build\$folder"
 & $python -m PyInstaller --noconfirm --clean --workpath $workRoot --distpath $distRoot packaging/local-caption.spec
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
-Copy-Item README.md, SECURITY.md, VALIDATION.md -Destination $appDir
+Copy-Item README.md, SECURITY.md, VALIDATION.md, LICENSE, THIRD_PARTY_NOTICES.md, CUDA_REDISTRIBUTION.md -Destination $appDir
+Copy-Item licenses -Destination $appDir -Recurse -Force
+& $python scripts/collect-notices.py $appDir $Variant
+if ($LASTEXITCODE -ne 0) { throw 'Dependency license audit failed; do not distribute this build.' }
 Write-Host "Built $appDir\LocalCaption.exe. Distribute the ENTIRE LocalCaption folder."
 Write-Host 'Models and FFmpeg/FFprobe remain external. See README.md.'
