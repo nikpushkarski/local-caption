@@ -44,8 +44,6 @@ The app never overwrites your input or an existing SRT. Replacing an output vide
 Python 3.12 and [uv](https://docs.astral.sh/uv/) are recommended. **Run these commands from the project folder** (the one containing `pyproject.toml`):
 
 ```powershell
-Set-Location -LiteralPath 'C:\Users\Nik Pushkarski\git\local-caption'
-
 # Smaller CPU edition:
 $env:UV_PROJECT_ENVIRONMENT = '.venv-cpu'
 uv sync --locked --extra transcribe --extra build
